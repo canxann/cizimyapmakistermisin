@@ -22,8 +22,8 @@ let lastY = 0;
 let hitPoints = 0;
 let isTransitioning = false;
 
-const REQUIRED_HITS = 14;      // Harfin hitbox alanı içinde toplanması gereken dokunma sayısı
-const FLOWER_SPACING = 18;     // Çiçek çizim aralığı
+const REQUIRED_HITS = 14;      
+const FLOWER_SPACING = 18;     
 
 function resizeCanvas() {
     canvas.width = window.innerWidth;
@@ -31,6 +31,12 @@ function resizeCanvas() {
 }
 window.addEventListener("resize", resizeCanvas);
 resizeCanvas();
+
+function triggerVibrate(pattern = 30) {
+    try {
+        if (navigator.vibrate) navigator.vibrate(pattern);
+    } catch(e) {}
+}
 
 function playSweetSound() {
     try {
@@ -53,6 +59,7 @@ function playSweetSound() {
 
 function triggerFinalBurst() {
     playSweetSound();
+    triggerVibrate([50, 50, 50, 100]);
     for (let i = 0; i < 80; i++) {
         const angle = Math.random() * Math.PI * 2;
         const speed = 2 + Math.random() * 10;
@@ -62,6 +69,7 @@ function triggerFinalBurst() {
             vx: Math.cos(angle) * speed,
             vy: Math.sin(angle) * speed,
             size: 10 + Math.random() * 14,
+            maxSize: 12 + Math.random() * 10,
             rotation: Math.random() * Math.PI * 2,
             hue: -15 + Math.random() * 30,
             born: performance.now(),
@@ -105,21 +113,24 @@ function showCurrentLetter() {
 }
 
 function addFlower(x, y) {
-    const limit = tutorialMode ? 100 : 200;
+    const limit = tutorialMode ? 100 : 250;
     if (flowers.length > limit) {
         flowers.shift();
     }
+
+    const targetSize = 12 + Math.random() * 10;
 
     flowers.push({
         x: x + (Math.random() - 0.5) * 8,
         y: y + (Math.random() - 0.5) * 8,
         vx: 0,
         vy: 0,
-        size: 12 + Math.random() * 10,
+        size: targetSize * 0.2, // Doğarken minik başlar (Pop efekti için)
+        maxSize: targetSize,
         rotation: Math.random() * Math.PI * 2,
-        hue: -12 + Math.random() * 24,
+        hue: -15 + Math.random() * 30,
         born: performance.now(),
-        life: tutorialMode ? 25000 : 8000, // Serbest modda eski çiçekler arkadan pürüzsüzce silinir
+        life: tutorialMode ? 25000 : 1500,
         isBurst: false
     });
 }
@@ -127,6 +138,14 @@ function addFlower(x, y) {
 function drawFlower(flower, now) {
     const age = now - flower.born;
     if (age >= flower.life) return false;
+
+    // İlk 150 milisaniyede minikten normal boyuta pürüzsüz büyüme (Pop animasyonu)
+    if (age < 150) {
+        const progress = age / 150;
+        flower.size = flower.maxSize * (0.2 + 0.8 * progress);
+    } else {
+        flower.size = flower.maxSize;
+    }
 
     if (flower.isBurst) {
         flower.x += flower.vx;
@@ -136,8 +155,9 @@ function drawFlower(flower, now) {
     }
 
     let alpha = 0.95;
-    if (age > flower.life - 1500) {
-        alpha *= (flower.life - age) / 1500;
+    const fadeDuration = tutorialMode ? 1500 : 400;
+    if (age > flower.life - fadeDuration) {
+        alpha *= (flower.life - age) / fadeDuration;
     }
 
     ctx.save();
@@ -148,7 +168,9 @@ function drawFlower(flower, now) {
     const petalCount = 5;
     for (let i = 0; i < petalCount; i++) {
         ctx.rotate((Math.PI * 2) / petalCount);
-        ctx.fillStyle = `hsl(${325 + flower.hue}, 75%, 75%)`;
+        // Serbest modda renkler hafifçe lila/pembe/somon tonlarında çeşitlenir
+        const hueShift = 325 + flower.hue + (!tutorialMode ? Math.sin(now * 0.003) * 15 : 0);
+        ctx.fillStyle = `hsl(${hueShift}, 75%, 75%)`;
         ctx.beginPath();
         ctx.ellipse(0, -flower.size * 0.45, flower.size * 0.3, flower.size * 0.55, 0, 0, Math.PI * 2);
         ctx.fill();
@@ -184,10 +206,10 @@ canvas.addEventListener("pointerdown", (e) => {
 
     if (tutorialMode && !isTransitioning) {
         const rect = targetLetter.getBoundingClientRect();
-        // Harfin ekrandaki hitbox alanı içinde mi tıklandı kontrolü
         if (e.clientX >= rect.left - 30 && e.clientX <= rect.right + 30 &&
             e.clientY >= rect.top - 30 && e.clientY <= rect.bottom + 30) {
             hitPoints++;
+            triggerVibrate(20);
             if (hitPoints >= REQUIRED_HITS) {
                 isTransitioning = true;
                 targetLetter.classList.remove("visible");
@@ -212,10 +234,10 @@ canvas.addEventListener("pointermove", (e) => {
 
         if (tutorialMode && !isTransitioning) {
             const rect = targetLetter.getBoundingClientRect();
-            // Harfin hitbox alanı içinde mi çiziliyor kontrolü
             if (e.clientX >= rect.left - 30 && e.clientX <= rect.right + 30 &&
                 e.clientY >= rect.top - 30 && e.clientY <= rect.bottom + 30) {
                 hitPoints++;
+                triggerVibrate(15);
                 if (hitPoints >= REQUIRED_HITS) {
                     isTransitioning = true;
                     targetLetter.classList.remove("visible");
