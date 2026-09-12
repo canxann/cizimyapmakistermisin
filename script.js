@@ -1,392 +1,659 @@
-* {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-}
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
 
-html,
-body {
-    width: 100%;
-    height: 100%;
-}
-
-body {
-    overflow: hidden;
-
-    background: #aec8f4;
-
-    /*
-       Çok önemli:
-       Telefonda parmakla çizim yaparken
-       sayfanın kaymasını engeller.
-    */
-    touch-action: none;
-
-    user-select: none;
-    -webkit-user-select: none;
-
-    -webkit-touch-callout: none;
-}
+const message = document.getElementById("message");
+const clearButton = document.getElementById("clearButton");
 
 
-/* ==================================================
-   ANA ALAN
-================================================== */
+/* =========================================
+   AYARLAR
+========================================= */
 
-#app {
-    position: relative;
+const FLOWER_DISTANCE = 16;
 
-    width: 100vw;
-    height: 100vh;
+const MIN_FLOWER_SIZE = 12;
+const MAX_FLOWER_SIZE = 25;
 
-    overflow: hidden;
-
-    background:
-        radial-gradient(
-            circle at 50% 50%,
-            rgba(255, 255, 255, 0.13),
-            transparent 45%
-        ),
-        #aec8f4;
-}
+const MAX_FLOWERS = 3000;
 
 
-/* ==================================================
-   ORTADAKİ YAZI
-================================================== */
+/* =========================================
+   CANVAS BOYUTU
+========================================= */
 
-#message {
-    position: absolute;
+let dpr = Math.min(
+    window.devicePixelRatio || 1,
+    2
+);
 
-    left: 50%;
-    top: 50%;
 
-    transform: translate(-50%, -50%);
+function resizeCanvas() {
 
-    z-index: 5;
+    const width = window.innerWidth;
+    const height = window.innerHeight;
 
-    width: max-content;
-    max-width: 90vw;
-
-    color: #e4496c;
-
-    font-family:
-        Georgia,
-        "Times New Roman",
-        serif;
-
-    font-size: clamp(
-        28px,
-        4.5vw,
-        64px
+    dpr = Math.min(
+        window.devicePixelRatio || 1,
+        2
     );
 
-    font-weight: 500;
+    canvas.width =
+        Math.round(width * dpr);
 
-    line-height: 1.15;
+    canvas.height =
+        Math.round(height * dpr);
 
-    text-align: center;
+    canvas.style.width =
+        width + "px";
 
-    pointer-events: none;
+    canvas.style.height =
+        height + "px";
 
-    transition:
-        opacity 0.5s ease,
-        transform 0.5s ease;
+    ctx.setTransform(
+        dpr,
+        0,
+        0,
+        dpr,
+        0,
+        0
+    );
 }
 
 
-/*
-   Çizim başlayınca yazı hafifçe
-   geri plana çekilir.
-*/
+resizeCanvas();
 
-#message.drawing {
-    opacity: 0.18;
 
-    transform:
-        translate(-50%, -50%)
-        scale(0.96);
+window.addEventListener(
+    "resize",
+    resizeCanvas
+);
+
+
+/* =========================================
+   DURUM
+========================================= */
+
+let drawing = false;
+
+let activePointer = null;
+
+let lastX = 0;
+let lastY = 0;
+
+let distanceSinceFlower = 0;
+
+const flowers = [];
+
+
+/* =========================================
+   YARDIMCI
+========================================= */
+
+function random(min, max) {
+
+    return Math.random() *
+        (max - min) + min;
 }
 
 
-/* ==================================================
-   ÇİZİM KATMANI
-================================================== */
+function distance(
+    x1,
+    y1,
+    x2,
+    y2
+) {
 
-#drawingLayer {
-    position: absolute;
-
-    inset: 0;
-
-    z-index: 10;
-
-    pointer-events: none;
+    return Math.hypot(
+        x2 - x1,
+        y2 - y1
+    );
 }
 
 
-/* ==================================================
-   TEMEL ÇİÇEK
-================================================== */
+/* =========================================
+   ÇİÇEK OLUŞTUR
+========================================= */
 
-.flower {
-    position: absolute;
+function addFlower(x, y) {
 
-    width: var(--flower-size, 30px);
-    height: var(--flower-size, 30px);
+    if (
+        flowers.length >= MAX_FLOWERS
+    ) {
 
-    pointer-events: none;
+        /*
+         * Çok uzun çizimlerde
+         * performansı korumak için
+         * en eski çiçeği kaldır.
+         */
 
-    transform:
-        translate(-50%, -50%)
-        rotate(var(--rotation, 0deg));
+        flowers.shift();
+    }
 
-    filter:
-        drop-shadow(
-            0 4px 5px rgba(95, 35, 75, 0.22)
+
+    const flower = {
+
+        x: x,
+
+        y: y,
+
+        size:
+            random(
+                MIN_FLOWER_SIZE,
+                MAX_FLOWER_SIZE
+            ),
+
+        rotation:
+            random(0, Math.PI * 2),
+
+        hue:
+            random(-8, 8),
+
+        alpha:
+            random(.78, 1),
+
+        phase:
+            random(0, Math.PI * 2)
+    };
+
+
+    flowers.push(flower);
+}
+
+
+/* =========================================
+   ÇİÇEK ÇİZ
+========================================= */
+
+function drawFlower(
+    flower,
+    time
+) {
+
+    const {
+        x,
+        y,
+        size,
+        rotation,
+        hue,
+        alpha,
+        phase
+    } = flower;
+
+
+    /*
+     * Çok hafif canlılık.
+     *
+     * Ama konumu değiştirmiyoruz.
+     * Böylece çizilen şekil bozulmuyor.
+     */
+
+    const pulse =
+        1 +
+        Math.sin(
+            time * 0.0015 + phase
+        ) * 0.035;
+
+
+    ctx.save();
+
+    ctx.translate(x, y);
+
+    ctx.rotate(rotation);
+
+    ctx.scale(
+        pulse,
+        pulse
+    );
+
+
+    ctx.globalAlpha = alpha;
+
+
+    /* -------------------------
+       Gölge
+    ------------------------- */
+
+    ctx.shadowColor =
+        "rgba(100,40,90,.25)";
+
+    ctx.shadowBlur = 6;
+
+    ctx.shadowOffsetY = 3;
+
+
+    /* -------------------------
+       Yapraklar
+    ------------------------- */
+
+    const petalCount = 5;
+
+    for (
+        let i = 0;
+        i < petalCount;
+        i++
+    ) {
+
+        ctx.save();
+
+        ctx.rotate(
+            (Math.PI * 2 / petalCount)
+            * i
         );
 
-    will-change: transform;
-}
 
-
-/* ==================================================
-   YAPRAKLAR
-================================================== */
-
-.petal {
-    position: absolute;
-
-    left: 50%;
-    top: 50%;
-
-    width: 42%;
-    height: 68%;
-
-    transform-origin: 50% 100%;
-
-    border-radius:
-        55%
-        55%
-        45%
-        45%;
-
-    background:
-        linear-gradient(
-            145deg,
-            #fff0f8 0%,
-            #f4b1d0 38%,
-            #dc6798 100%
-        );
-
-    box-shadow:
-        inset
-        -2px -3px 5px
-        rgba(126, 48, 91, 0.12);
-}
-
-
-/*
-   Her yaprağın açısı
-*/
-
-.p1 {
-    transform:
-        translate(-50%, -100%)
-        rotate(0deg);
-}
-
-.p2 {
-    transform:
-        translate(-50%, -100%)
-        rotate(72deg);
-}
-
-.p3 {
-    transform:
-        translate(-50%, -100%)
-        rotate(144deg);
-}
-
-.p4 {
-    transform:
-        translate(-50%, -100%)
-        rotate(216deg);
-}
-
-.p5 {
-    transform:
-        translate(-50%, -100%)
-        rotate(288deg);
-}
-
-
-/* ==================================================
-   ÇİÇEK MERKEZİ
-================================================== */
-
-.center {
-    position: absolute;
-
-    left: 50%;
-    top: 50%;
-
-    width: 25%;
-    height: 25%;
-
-    transform: translate(-50%, -50%);
-
-    border-radius: 50%;
-
-    background:
-        radial-gradient(
-            circle,
-            #ffe6a7 0%,
-            #f4ae72 42%,
-            #d96587 100%
-        );
-
-    box-shadow:
-        0 1px 3px rgba(95, 35, 65, 0.28);
-}
-
-
-/* ==================================================
-   ÇİZİM ÇİÇEKLERİ
-================================================== */
-
-.drawing-flower {
-    animation:
-        flowerAppear 0.45s ease-out both,
-        flowerFloat
-        3.2s
-        ease-in-out
-        infinite;
-
-    animation-delay:
-        0s,
-        var(--float-delay, 0s);
-}
-
-
-/*
-   Çiçek çizgiye eklendiğinde
-   hafifçe büyüyerek gelsin.
-*/
-
-@keyframes flowerAppear {
-
-    0% {
-        opacity: 0;
-
-        transform:
-            translate(-50%, -50%)
-            scale(0.15)
-            rotate(0deg);
-    }
-
-    70% {
-        opacity: 1;
-
-        transform:
-            translate(-50%, -50%)
-            scale(1.08)
-            rotate(var(--rotation, 0deg));
-    }
-
-    100% {
-        opacity: 1;
-
-        transform:
-            translate(-50%, -50%)
-            scale(1)
-            rotate(var(--rotation, 0deg));
-    }
-}
-
-
-/*
-   Çok hafif canlılık.
-   Çiçek çizginin yerini değiştirmez.
-*/
-
-@keyframes flowerFloat {
-
-    0%,
-    100% {
-        margin-top: 0;
-    }
-
-    50% {
-        margin-top: -2px;
-    }
-}
-
-
-/* ==================================================
-   FIRÇA ÇİÇEĞİ
-================================================== */
-
-.brush-flower {
-    position: fixed;
-
-    left: 0;
-    top: 0;
-
-    z-index: 100;
-
-    opacity: 0;
-
-    transform:
-        translate(-50%, -50%)
-        scale(0.85);
-
-    transition:
-        opacity 0.15s ease;
-
-    pointer-events: none;
-}
-
-
-/*
-   Aktifken görünür
-*/
-
-.brush-flower.active {
-    opacity: 1;
-}
-
-
-/* ==================================================
-   MOBİL
-================================================== */
-
-@media (max-width: 600px) {
-
-    #message {
-        max-width: 88vw;
-
-        font-size: 31px;
-
-        white-space: normal;
-    }
-
-    .drawing-flower {
-        filter:
-            drop-shadow(
-                0 3px 4px
-                rgba(95, 35, 75, 0.20)
+        const gradient =
+            ctx.createLinearGradient(
+                0,
+                -size * .1,
+                0,
+                -size
             );
+
+
+        gradient.addColorStop(
+            0,
+            `hsl(${330 + hue}, 65%, 78%)`
+        );
+
+        gradient.addColorStop(
+            .45,
+            `hsl(${328 + hue}, 62%, 72%)`
+        );
+
+        gradient.addColorStop(
+            1,
+            `hsl(${332 + hue}, 60%, 88%)`
+        );
+
+
+        ctx.fillStyle = gradient;
+
+
+        /*
+         * Organik yaprak şekli
+         */
+
+        ctx.beginPath();
+
+        ctx.moveTo(
+            0,
+            -size * .15
+        );
+
+        ctx.bezierCurveTo(
+            -size * .48,
+            -size * .45,
+            -size * .48,
+            -size * .92,
+            0,
+            -size
+        );
+
+        ctx.bezierCurveTo(
+            size * .48,
+            -size * .92,
+            size * .48,
+            -size * .45,
+            0,
+            -size * .15
+        );
+
+        ctx.fill();
+
+        ctx.restore();
+    }
+
+
+    /* -------------------------
+       Çiçek merkezi
+    ------------------------- */
+
+    ctx.shadowBlur = 3;
+
+    const centerGradient =
+        ctx.createRadialGradient(
+            0,
+            0,
+            1,
+            0,
+            0,
+            size * .25
+        );
+
+
+    centerGradient.addColorStop(
+        0,
+        "#ffe8ad"
+    );
+
+    centerGradient.addColorStop(
+        .55,
+        "#f2a56f"
+    );
+
+    centerGradient.addColorStop(
+        1,
+        "#d95f83"
+    );
+
+
+    ctx.fillStyle =
+        centerGradient;
+
+
+    ctx.beginPath();
+
+    ctx.arc(
+        0,
+        0,
+        size * .23,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.fill();
+
+
+    ctx.restore();
+}
+
+
+/* =========================================
+   TÜM ÇİÇEKLERİ ÇİZ
+========================================= */
+
+function render(time) {
+
+    ctx.clearRect(
+        0,
+        0,
+        window.innerWidth,
+        window.innerHeight
+    );
+
+
+    for (
+        const flower of flowers
+    ) {
+
+        drawFlower(
+            flower,
+            time
+        );
+    }
+
+
+    requestAnimationFrame(
+        render
+    );
+}
+
+
+requestAnimationFrame(
+    render
+);
+
+
+/* =========================================
+   ÇİZGİ BOYUNCA ÇİÇEKLER
+========================================= */
+
+function drawLine(
+    x1,
+    y1,
+    x2,
+    y2
+) {
+
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+
+    const length =
+        Math.hypot(dx, dy);
+
+
+    if (length === 0) {
+        return;
+    }
+
+
+    const steps =
+        Math.ceil(
+            length / 5
+        );
+
+
+    /*
+     * Çok hızlı mouse hareketinde
+     * arada boşluk kalmaması için
+     * interpolasyon yapıyoruz.
+     */
+
+    for (
+        let i = 1;
+        i <= steps;
+        i++
+    ) {
+
+        const t =
+            i / steps;
+
+        const x =
+            x1 + dx * t;
+
+        const y =
+            y1 + dy * t;
+
+
+        const segmentDistance =
+            distance(
+                lastX,
+                lastY,
+                x,
+                y
+            );
+
+
+        distanceSinceFlower +=
+            segmentDistance;
+
+
+        if (
+            distanceSinceFlower
+            >= FLOWER_DISTANCE
+        ) {
+
+            addFlower(
+                x,
+                y
+            );
+
+            distanceSinceFlower = 0;
+        }
+
+
+        lastX = x;
+        lastY = y;
     }
 }
 
 
-/* ==================================================
-   KÜÇÜK TELEFONLAR
-================================================== */
+/* =========================================
+   ÇİZİME BAŞLA
+========================================= */
 
-@media (max-width: 380px) {
+function startDrawing(event) {
 
-    #message {
-        font-size: 27px;
+    if (
+        activePointer !== null
+    ) {
+        return;
     }
+
+
+    activePointer =
+        event.pointerId;
+
+    drawing = true;
+
+
+    lastX =
+        event.clientX;
+
+    lastY =
+        event.clientY;
+
+
+    distanceSinceFlower = 0;
+
+
+    message.classList.add(
+        "drawing"
+    );
+
+
+    /*
+     * İlk çiçek.
+     */
+
+    addFlower(
+        lastX,
+        lastY
+    );
+
+
+    /*
+     * Pointer capture:
+     *
+     * Parmak/mouse alanın dışına
+     * biraz çıksa bile çizim
+     * kaybolmaz.
+     */
+
+    try {
+
+        canvas.setPointerCapture(
+            event.pointerId
+        );
+
+    } catch (error) {}
 }
+
+
+/* =========================================
+   ÇİZ
+========================================= */
+
+function moveDrawing(event) {
+
+    if (!drawing) {
+        return;
+    }
+
+
+    if (
+        event.pointerId !==
+        activePointer
+    ) {
+        return;
+    }
+
+
+    const x =
+        event.clientX;
+
+    const y =
+        event.clientY;
+
+
+    drawLine(
+        lastX,
+        lastY,
+        x,
+        y
+    );
+}
+
+
+/* =========================================
+   ÇİZİMİ BİTİR
+========================================= */
+
+function stopDrawing(event) {
+
+    if (!drawing) {
+        return;
+    }
+
+
+    if (
+        event &&
+        event.pointerId !==
+        activePointer
+    ) {
+        return;
+    }
+
+
+    drawing = false;
+
+    activePointer = null;
+
+
+    message.classList.remove(
+        "drawing"
+    );
+
+
+    try {
+
+        if (event) {
+
+            canvas.releasePointerCapture(
+                event.pointerId
+            );
+        }
+
+    } catch (error) {}
+}
+
+
+/* =========================================
+   POINTER EVENTLERİ
+========================================= */
+
+canvas.addEventListener(
+    "pointerdown",
+    startDrawing
+);
+
+canvas.addEventListener(
+    "pointermove",
+    moveDrawing
+);
+
+canvas.addEventListener(
+    "pointerup",
+    stopDrawing
+);
+
+canvas.addEventListener(
+    "pointercancel",
+    stopDrawing
+);
+
+
+/* =========================================
+   TEMİZLE
+========================================= */
+
+clearButton.addEventListener(
+    "click",
+    () => {
+
+        flowers.length = 0;
+
+        distanceSinceFlower = 0;
+
+    }
+);
