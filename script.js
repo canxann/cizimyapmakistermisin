@@ -38,9 +38,9 @@ let drawing = false;
 let activePointer = null;
 let distanceSinceFlower = 0;
 
-const FLOWER_DISTANCE = 15;
-const HIT_RADIUS = 50;
-const REQUIRED_COVERAGE = 0.50;
+const FLOWER_DISTANCE = 8; // Çiçekler çok daha sık ve gür açacak
+const HIT_RADIUS = 35; // Hitbox daraltıldı, harfi düzgün takip etmek zorundasın
+const REQUIRED_COVERAGE = 0.75; // Harfin en az %75'i çizilmeden geçilmez
 
 function resizeCanvas() {
     canvas.width = window.innerWidth;
@@ -52,8 +52,8 @@ resizeCanvas();
 function getLetterSize() {
     const isMobile = window.innerWidth <= 600;
     return {
-        width: isMobile ? 180 : 220,
-        height: isMobile ? 240 : 280
+        width: isMobile ? 190 : 230,
+        height: isMobile ? 250 : 300
     };
 }
 
@@ -82,7 +82,7 @@ function showCurrentLetter() {
         tutorialProgress.textContent = "";
         message.classList.add("show");
         clearButton.classList.add("show");
-        setTimeout(() => message.classList.remove("show"), 2500);
+        setTimeout(() => message.classList.remove("show"), 3000);
         return;
     }
 
@@ -97,12 +97,14 @@ function showCurrentLetter() {
     const def = LETTERS[currentLetter] || [];
     targetSegments = def.map(seg => seg.map(toScreenPoint));
     
+    // Hitbox için hedef noktaları yoğunlaştırıyoruz
     targetPoints = [];
     targetSegments.forEach(seg => {
         for (let i = 0; i < seg.length - 1; i++) {
             const a = seg[i], b = seg[i+1];
-            const steps = 6;
-            for(let s=0; s<=steps; s++) {
+            const dist = Math.hypot(b.x - a.x, b.y - a.y);
+            const steps = Math.max(5, Math.floor(dist / 10));
+            for(let s = 0; s <= steps; s++) {
                 targetPoints.push({
                     x: a.x + (b.x - a.x) * (s/steps),
                     y: a.y + (b.y - a.y) * (s/steps)
@@ -120,15 +122,16 @@ function showCurrentLetter() {
     targetLetter.classList.add("visible");
 }
 
-function addFlower(x, y, customSize = null) {
-    if (flowers.length > 900) flowers.shift();
+function addFlower(x, y) {
+    if (flowers.length > 1500) flowers.shift();
     flowers.push({
-        x, y,
-        size: customSize ?? (10 + Math.random() * 10),
+        x: x + (Math.random() - 0.5) * 8,
+        y: y + (Math.random() - 0.5) * 8,
+        size: 11 + Math.random() * 10,
         rotation: Math.random() * Math.PI * 2,
-        hue: -10 + Math.random() * 20,
+        hue: -12 + Math.random() * 24,
         born: performance.now(),
-        life: 7000
+        life: 8000
     });
 }
 
@@ -136,9 +139,9 @@ function drawFlower(flower, now) {
     const age = now - flower.born;
     if (age >= flower.life) return false;
 
-    let alpha = 0.9;
-    if (age > flower.life - 1000) {
-        alpha *= (flower.life - age) / 1000;
+    let alpha = 0.92;
+    if (age > flower.life - 1200) {
+        alpha *= (flower.life - age) / 1200;
     }
 
     ctx.save();
@@ -149,22 +152,22 @@ function drawFlower(flower, now) {
     const petalCount = 5;
     for (let i = 0; i < petalCount; i++) {
         ctx.rotate((Math.PI * 2) / petalCount);
-        ctx.fillStyle = `hsl(${330 + flower.hue}, 70%, 76%)`;
+        ctx.fillStyle = `hsl(${325 + flower.hue}, 75%, 75%)`;
         ctx.beginPath();
-        ctx.ellipse(0, -flower.size * 0.45, flower.size * 0.28, flower.size * 0.55, 0, 0, Math.PI * 2);
+        ctx.ellipse(0, -flower.size * 0.45, flower.size * 0.3, flower.size * 0.55, 0, 0, Math.PI * 2);
         ctx.fill();
     }
 
-    ctx.fillStyle = "#ffdd80";
+    ctx.fillStyle = "#ffe394";
     ctx.beginPath();
-    ctx.arc(0, 0, flower.size * 0.22, 0, Math.PI * 2);
+    ctx.arc(0, 0, flower.size * 0.24, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
     return true;
 }
 
 function checkLetterCompletion() {
-    if (!tutorialMode || targetPoints.length === 0 || userPoints.length < 10) return;
+    if (!tutorialMode || targetPoints.length === 0) return;
 
     let covered = 0;
     for (const target of targetPoints) {
@@ -178,6 +181,7 @@ function checkLetterCompletion() {
         if (found) covered++;
     }
 
+    // Harfin yeterli oranını çizdiyse sonraki harfe geç
     if (covered / targetPoints.length >= REQUIRED_COVERAGE) {
         targetLetter.classList.remove("visible");
         currentIndex++;
@@ -191,9 +195,9 @@ function render(time) {
     // Rehber Çizgi
     if (tutorialMode && targetSegments.length > 0) {
         ctx.save();
-        ctx.strokeStyle = "rgba(217, 95, 131, 0.22)";
-        ctx.lineWidth = 4;
-        ctx.setLineDash([6, 6]);
+        ctx.strokeStyle = "rgba(217, 95, 131, 0.25)";
+        ctx.lineWidth = 5;
+        ctx.setLineDash([8, 8]);
         targetSegments.forEach(seg => {
             ctx.beginPath();
             ctx.moveTo(seg[0].x, seg[0].y);
@@ -206,8 +210,8 @@ function render(time) {
     // Kullanıcı Çizgisi
     if (currentStroke.length > 1) {
         ctx.save();
-        ctx.strokeStyle = "rgba(215,76,120,0.6)";
-        ctx.lineWidth = 4;
+        ctx.strokeStyle = "rgba(215,76,120,0.65)";
+        ctx.lineWidth = 5;
         ctx.lineCap = "round";
         ctx.beginPath();
         ctx.moveTo(currentStroke[0].x, currentStroke[0].y);
@@ -233,7 +237,7 @@ canvas.addEventListener("pointerdown", (e) => {
     currentStroke = [{ x: e.clientX, y: e.clientY }];
     userPoints.push({ x: e.clientX, y: e.clientY });
     distanceSinceFlower = 0;
-    addFlower(e.clientX, e.clientY, 8);
+    addFlower(e.clientX, e.clientY);
 });
 
 canvas.addEventListener("pointermove", (e) => {
@@ -248,7 +252,10 @@ canvas.addEventListener("pointermove", (e) => {
     if (distanceSinceFlower >= FLOWER_DISTANCE) {
         addFlower(pt.x, pt.y);
         distanceSinceFlower = 0;
-        if (tutorialMode) checkLetterCompletion();
+    }
+
+    if (tutorialMode) {
+        checkLetterCompletion();
     }
 });
 
@@ -257,7 +264,9 @@ canvas.addEventListener("pointerup", (e) => {
         drawing = false;
         activePointer = null;
         currentStroke = [];
-        if (tutorialMode) checkLetterCompletion();
+        if (tutorialMode) {
+            checkLetterCompletion();
+        }
     }
 });
 
