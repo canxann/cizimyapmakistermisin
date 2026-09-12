@@ -83,7 +83,7 @@ html, body {
     background: rgba(174, 200, 244, 0.92);
     opacity: 0;
     pointer-events: none;
-    transition: opacity 0.5s ease;
+    transition: opacity 0.8s ease;
 }
 
 #message.show {
@@ -92,15 +92,20 @@ html, body {
 }
 
 #message div {
-    font-size: 2rem;
+    font-size: clamp(1.8rem, 4vw, 2.5rem);
     font-weight: 800;
     color: #3b5c8f;
     margin-bottom: 8px;
+    text-align: center;
+    padding: 0 20px;
 }
 
 #message span {
-    font-size: 1.2rem;
+    font-size: clamp(1rem, 2.5vw, 1.4rem);
     color: #5578a9;
+    font-weight: 700;
+    text-align: center;
+    letter-spacing: 1px;
 }
 
 #clearButton {
