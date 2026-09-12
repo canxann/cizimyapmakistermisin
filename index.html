@@ -18,38 +18,50 @@
 
 <body>
 
-<div id="app">
+    <main id="app">
 
-    <canvas id="canvas"></canvas>
+        <canvas id="canvas"></canvas>
 
-    <div id="tutorialUI">
+        <!-- TUTORIAL -->
+        <section id="tutorial">
 
-        <div id="tutorialHint">
-            HARFİ ÇİZ
+            <div id="tutorialHint">
+                Harfi kendin çiz
+            </div>
+
+            <div id="targetLetter"></div>
+
+            <div id="tutorialProgress"></div>
+
+        </section>
+
+
+        <!-- TUTORIAL BİTTİKTEN SONRA -->
+        <div id="message">
+
+            <div>
+                Tutorial tamamlandı 🌸
+            </div>
+
+            <span>
+                Artık istediğini çizebilirsin.
+            </span>
+
         </div>
 
-        <div id="letter">
-            V
-        </div>
 
-        <div id="progress">
-            1 / 21
-        </div>
+        <!-- TEMİZLE -->
+        <button
+            id="clearButton"
+            type="button"
+        >
+            Temizle
+        </button>
 
-    </div>
+    </main>
 
-    <div id="completeMessage">
-        <strong>Tutorial tamamlandı 🌸</strong>
-        <span>Artık istediğini çizebilirsin.</span>
-    </div>
 
-    <button id="clearButton">
-        Temizle
-    </button>
-
-</div>
-
-<script src="./script.js"></script>
+    <script src="./script.js"></script>
 
 </body>
 </html>
