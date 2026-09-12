@@ -19,372 +19,51 @@ body {
     user-select: none;
     -webkit-user-select: none;
     -webkit-touch-callout: none;
+
+    font-family:
+        Arial,
+        Helvetica,
+        sans-serif;
 }
+
+
+/* =========================================================
+   ANA ALAN
+========================================================= */
 
 #app {
     position: fixed;
+
     inset: 0;
 
-    width: 100%;
-    height: 100%;
+    width: 100vw;
+    height: 100vh;
 
     overflow: hidden;
 
     background:
         radial-gradient(
-            circle at 50% 42%,
-            rgba(255,255,255,.20),
-            transparent 58%
+            ellipse at 50% 45%,
+            rgba(255, 255, 255, 0.20) 0%,
+            rgba(255, 255, 255, 0.08) 35%,
+            transparent 70%
         ),
         #aec8f4;
 }
 
 
-/* =========================================
+/* =========================================================
    CANVAS
-========================================= */
+========================================================= */
 
 #canvas {
     position: absolute;
+
     inset: 0;
+
+    display: block;
 
     width: 100%;
     height: 100%;
 
-    display: block;
-
-    touch-action: none;
-
     z-index: 1;
-
-    cursor: crosshair;
-}
-
-
-/* =========================================
-   TUTORIAL UI
-========================================= */
-
-#tutorialUI {
-    position: absolute;
-
-    left: 50%;
-    top: 50%;
-
-    transform:
-        translate(-50%, -50%);
-
-    z-index: 5;
-
-    display: flex;
-
-    flex-direction: column;
-
-    align-items: center;
-
-    pointer-events: none;
-
-    transition:
-        opacity .5s ease,
-        transform .6s cubic-bezier(.22,1,.36,1);
-}
-
-#tutorialUI.hide {
-    opacity: 0;
-
-    transform:
-        translate(-50%, -50%)
-        scale(1.08);
-}
-
-
-/* =========================================
-   BAŞLIK
-========================================= */
-
-#tutorialHint {
-    margin-bottom: 10px;
-
-    color:
-        rgba(91, 67, 105, .58);
-
-    font-family:
-        "Trebuchet MS",
-        "Arial Rounded MT Bold",
-        Arial,
-        sans-serif;
-
-    font-size: 12px;
-
-    font-weight: 700;
-
-    letter-spacing: 3px;
-}
-
-
-/* =========================================
-   HEDEF HARF
-========================================= */
-
-#letter {
-    min-width: 260px;
-
-    text-align: center;
-
-    color:
-        rgba(224, 66, 105, .27);
-
-    font-family:
-        "Trebuchet MS",
-        "Arial Rounded MT Bold",
-        Arial,
-        sans-serif;
-
-    font-size:
-        clamp(
-            180px,
-            32vw,
-            320px
-        );
-
-    font-weight: 700;
-
-    line-height: .82;
-
-    text-shadow:
-        0 10px 35px
-        rgba(130, 60, 100, .08);
-
-    transition:
-        opacity .25s ease,
-        transform .35s cubic-bezier(.22,1,.36,1);
-}
-
-#letter.change {
-    opacity: 0;
-
-    transform:
-        scale(.82);
-}
-
-
-/* =========================================
-   İLERLEME
-========================================= */
-
-#progress {
-    margin-top: 25px;
-
-    color:
-        rgba(91, 67, 105, .48);
-
-    font-family:
-        Arial,
-        sans-serif;
-
-    font-size: 12px;
-
-    letter-spacing: 2px;
-}
-
-
-/* =========================================
-   TAMAMLANDI
-========================================= */
-
-#completeMessage {
-    position: absolute;
-
-    left: 50%;
-    top: 50%;
-
-    z-index: 10;
-
-    width: max-content;
-
-    max-width: 90vw;
-
-    transform:
-        translate(-50%, -50%)
-        scale(.92);
-
-    opacity: 0;
-
-    pointer-events: none;
-
-    text-align: center;
-
-    transition:
-        opacity .7s ease,
-        transform .7s cubic-bezier(.22,1,.36,1);
-}
-
-#completeMessage.show {
-    opacity: 1;
-
-    transform:
-        translate(-50%, -50%)
-        scale(1);
-}
-
-#completeMessage strong {
-    display: block;
-
-    color: #df4268;
-
-    font-family:
-        "Trebuchet MS",
-        "Arial Rounded MT Bold",
-        Arial,
-        sans-serif;
-
-    font-size:
-        clamp(
-            28px,
-            5vw,
-            54px
-        );
-
-    line-height: 1.2;
-}
-
-#completeMessage span {
-    display: block;
-
-    margin-top: 12px;
-
-    color:
-        rgba(82, 64, 91, .72);
-
-    font-family:
-        Arial,
-        sans-serif;
-
-    font-size:
-        clamp(
-            14px,
-            2vw,
-            18px
-        );
-}
-
-
-/* =========================================
-   TEMİZLE
-========================================= */
-
-#clearButton {
-    position: absolute;
-
-    right: 22px;
-    bottom: 22px;
-
-    z-index: 20;
-
-    padding: 11px 18px;
-
-    border: none;
-
-    border-radius: 999px;
-
-    background:
-        rgba(255,255,255,.72);
-
-    color: #b83d66;
-
-    font-family:
-        Arial,
-        sans-serif;
-
-    font-size: 14px;
-
-    box-shadow:
-        0 5px 18px
-        rgba(80,40,90,.12);
-
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-
-    cursor: pointer;
-
-    opacity: 0;
-
-    pointer-events: none;
-
-    transform:
-        translateY(8px);
-
-    transition:
-        opacity .5s ease,
-        transform .3s ease,
-        background .2s ease;
-}
-
-#clearButton.show {
-    opacity: 1;
-
-    pointer-events: auto;
-
-    transform:
-        translateY(0);
-}
-
-#clearButton:hover {
-    background: white;
-
-    transform:
-        translateY(-2px);
-}
-
-#clearButton:active {
-    transform:
-        scale(.94);
-}
-
-
-/* =========================================
-   TELEFON
-========================================= */
-
-@media (max-width: 600px) {
-
-    #tutorialHint {
-        font-size: 11px;
-
-        letter-spacing: 2px;
-    }
-
-    #letter {
-        min-width: 220px;
-
-        font-size:
-            clamp(
-                160px,
-                52vw,
-                270px
-            );
-    }
-
-    #progress {
-        margin-top: 20px;
-    }
-
-    #clearButton {
-        right: 15px;
-        bottom: 15px;
-
-        padding: 10px 15px;
-    }
-}
-
-
-/* =========================================
-   KÜÇÜK TELEFON
-========================================= */
-
-@media (max-width: 380px) {
-
-    #letter {
-        font-size: 145px;
-    }
-}
