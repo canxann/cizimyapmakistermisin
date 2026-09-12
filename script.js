@@ -1,9 +1,6 @@
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 
-const offCanvas = document.createElement("canvas");
-const offCtx = offCanvas.getContext("2d", { willReadFrequently: true });
-
 const tutorialHint = document.getElementById("tutorialHint");
 const targetLetter = document.getElementById("targetLetter");
 const tutorialProgress = document.getElementById("tutorialProgress");
@@ -12,10 +9,9 @@ const msgTitle = document.getElementById("msgTitle");
 const msgSub = document.getElementById("msgSub");
 const clearButton = document.getElementById("clearButton");
 
-// Cümlenin tamamı harf harf (boşluklar filtrelenip sadece çizilebilir karakterler bırakıldı)
+// Boşluklar dahil eksiksiz tam cümle
 const FULL_SENTENCE = "VALORANT GIRL PICK ME OLMA";
-// Sadece harfleri ve sayıları/karakterleri sırayla işleyelim ama boşlukları otomatik geçelim
-const CHARS_LIST = FULL_SENTENCE.split("");
+const CHARS_LIST = FULL_SENTENCE.replace(/\s+/g, "").split(""); // 21 harf
 
 let flowers = [];
 let tutorialMode = true;
@@ -23,23 +19,22 @@ let currentIndex = 0;
 let drawing = false;
 let activePointer = null;
 let distanceSinceFlower = 0;
+let currentLetterFlowerCount = 0;
 
-const FLOWER_DISTANCE = 12;
+const FLOWER_DISTANCE = 10;
+const REQUIRED_FLOWERS = 18; // Her harf için gereken çiçek sayısı (kolayca doldurulur ama atlanmaz)
 
 function resizeCanvas() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
-    offCanvas.width = window.innerWidth;
-    offCanvas.height = window.innerHeight;
 }
 window.addEventListener("resize", resizeCanvas);
 resizeCanvas();
 
-// Tatlı kutlama sesi (Web Audio API ile yumuşak melodi)
 function playSweetSound() {
     try {
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        const notes = [523.25, 659.25, 783.99, 1046.50]; // Do, Mi, Sol, Do (Tiz tatlı melodi)
+        const notes = [523.25, 659.25, 783.99, 1046.50];
         notes.forEach((freq, index) => {
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
@@ -55,12 +50,11 @@ function playSweetSound() {
     } catch(e) {}
 }
 
-// Final Patlama Efekti (Ekranın etrafına çiçekler saçılır)
 function triggerFinalBurst() {
     playSweetSound();
-    for (let i = 0; i < 60; i++) {
+    for (let i = 0; i < 80; i++) {
         const angle = Math.random() * Math.PI * 2;
-        const speed = 2 + Math.random() * 8;
+        const speed = 2 + Math.random() * 10;
         flowers.push({
             x: window.innerWidth / 2,
             y: window.innerHeight / 2,
@@ -70,20 +64,14 @@ function triggerFinalBurst() {
             rotation: Math.random() * Math.PI * 2,
             hue: -15 + Math.random() * 30,
             born: performance.now(),
-            life: 3000,
+            life: 3500,
             isBurst: true
         });
     }
 }
 
 function showCurrentLetter() {
-    // Tüm harfler bitti mi kontrolü
-    while (currentIndex < CHARS_LIST.length && CHARS_LIST[currentIndex] === " ") {
-        currentIndex++; // Boşlukları otomatik atla
-    }
-
     if (currentIndex >= CHARS_LIST.length) {
-        // Tutorial bitti! Final patlaması yapıyoruz
         tutorialMode = false;
         targetLetter.classList.remove("visible");
         tutorialHint.textContent = "";
@@ -91,25 +79,22 @@ function showCurrentLetter() {
 
         triggerFinalBurst();
 
-        // Önce mesajı göster (Valo kız meme'i tam ekran şov)
         msgTitle.textContent = "Tutorial tamamlandı 🌸";
         msgSub.textContent = FULL_SENTENCE;
         message.classList.add("show");
 
-        // 2 saniye sonra mesajı kapat, ekranı pürüzsüzce temizle ve free çizime geç
         setTimeout(() => {
             message.classList.remove("show");
-            flowers = []; // Ekranı otomatik pürüzsüzce sıfırla
-            clearButton.classList.add("show"); // İsterse sonradan temizlesin diye butonu çıkar
+            flowers = []; // Otomatik pürüzsüz temizlik
+            clearButton.classList.add("show");
         }, 2000);
 
         return;
     }
 
     const char = CHARS_LIST[currentIndex];
-    
-    // Yeni harfe geçerken ekran tertemiz olur
-    flowers = [];
+    flowers = []; // Her yeni harfte eski çiçekler tamamen silinir
+    currentLetterFlowerCount = 0;
 
     targetLetter.textContent = char;
     tutorialHint.textContent = `"${char}" harfinin içini çiçeklerle doldur`;
@@ -131,13 +116,22 @@ function addFlower(x, y) {
         life: tutorialMode ? 15000 : 25000,
         isBurst: false
     });
+
+    if (tutorialMode) {
+        currentLetterFlowerCount++;
+        // Yeterli çiçek çizildiğinde sonraki harfe geç
+        if (currentLetterFlowerCount >= REQUIRED_FLOWERS) {
+            targetLetter.classList.remove("visible");
+            currentIndex++;
+            setTimeout(showCurrentLetter, 250);
+        }
+    }
 }
 
 function drawFlower(flower, now) {
     const age = now - flower.born;
     if (age >= flower.life) return false;
 
-    // Eğer patlama efekti ise hareket ettir
     if (flower.isBurst) {
         flower.x += flower.vx;
         flower.y += flower.vy;
@@ -172,58 +166,6 @@ function drawFlower(flower, now) {
     return true;
 }
 
-// Harf doluluk oranı kontrolü
-function checkLetterFilling() {
-    if (!tutorialMode) return;
-
-    const char = CHARS_LIST[currentIndex];
-    if (!char) return;
-
-    offCtx.clearRect(0, 0, offCanvas.width, offCanvas.height);
-    offCtx.font = "900 " + Math.min(window.innerWidth * 0.35, 280) + "px Arial, sans-serif";
-    offCtx.textAlign = "center";
-    offCtx.textBaseline = "middle";
-    offCtx.fillStyle = "#000000";
-    offCtx.fillText(char, offCanvas.width / 2, offCanvas.height / 2);
-
-    const imgData = offCtx.getImageData(0, 0, offCanvas.width, offCanvas.height);
-    const data = imgData.data;
-
-    let totalLetterPixels = 0;
-    let coveredPixels = 0;
-
-    for (let y = 0; y < offCanvas.height; y += 5) {
-        for (let x = 0; x < offCanvas.width; x += 5) {
-            const index = (y * offCanvas.width + x) * 4;
-            if (data[index + 3] > 120) {
-                totalLetterPixels++;
-                let covered = false;
-                for (let f = 0; f < flowers.length; f++) {
-                    const fl = flowers[f];
-                    if (!fl.isBurst) {
-                        const dx = fl.x - x;
-                        const dy = fl.y - y;
-                        if (dx * dx + dy * dy < (fl.size * 1.3) * (fl.size * 1.3)) {
-                            covered = true;
-                            break;
-                        }
-                    }
-                }
-                if (covered) coveredPixels++;
-            }
-        }
-    }
-
-    if (totalLetterPixels > 0) {
-        const fillPercentage = coveredPixels / totalLetterPixels;
-        if (fillPercentage >= 0.38) {
-            targetLetter.classList.remove("visible");
-            currentIndex++;
-            setTimeout(showCurrentLetter, 250);
-        }
-    }
-}
-
 function render(time) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -236,13 +178,11 @@ function render(time) {
 }
 requestAnimationFrame(render);
 
-// Pointer Olayları (Hem Tutorial hem Free Draw için ortak)
 canvas.addEventListener("pointerdown", (e) => {
     activePointer = e.pointerId;
     drawing = true;
     distanceSinceFlower = 0;
     addFlower(e.clientX, e.clientY);
-    if (tutorialMode) checkLetterFilling();
 });
 
 canvas.addEventListener("pointermove", (e) => {
@@ -257,10 +197,6 @@ canvas.addEventListener("pointermove", (e) => {
         }
     } else {
         addFlower(e.clientX, e.clientY);
-    }
-
-    if (tutorialMode) {
-        checkLetterFilling();
     }
 });
 
