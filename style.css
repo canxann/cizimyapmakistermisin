@@ -53,9 +53,9 @@ html, body {
 }
 
 #targetLetter {
-    font-size: clamp(150px, 30vw, 260px);
+    font-size: clamp(150px, 35vw, 280px);
     font-weight: 900;
-    color: rgba(255, 255, 255, 0.4);
+    color: rgba(255, 255, 255, 0.25);
     opacity: 0;
     transition: opacity 0.3s ease;
 }
