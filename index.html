@@ -13,35 +13,26 @@
 
     <title>Çiçeklerle Çizim</title>
 
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="./style.css">
 </head>
 
 <body>
 
-    <main id="app">
+    <div id="app">
 
-        <!-- Ortadaki mesaj -->
+        <canvas id="canvas"></canvas>
+
         <div id="message">
             Çiçeklerle çizim yapmak ister misin?
         </div>
 
-        <!-- Çiçeklerin çizileceği alan -->
-        <div id="drawingLayer"></div>
+        <button id="clearButton">
+            Temizle
+        </button>
 
-        <!-- Çizim sırasında kullanılan imleç çiçeği -->
-        <div id="brushFlower" class="flower brush-flower">
-            <span class="petal p1"></span>
-            <span class="petal p2"></span>
-            <span class="petal p3"></span>
-            <span class="petal p4"></span>
-            <span class="petal p5"></span>
+    </div>
 
-            <span class="center"></span>
-        </div>
-
-    </main>
-
-    <script src="script.js"></script>
+    <script src="./script.js"></script>
 
 </body>
 </html>
