@@ -4,15 +4,12 @@
     box-sizing: border-box;
 }
 
-
 html,
 body {
     width: 100%;
     height: 100%;
-
     overflow: hidden;
 }
-
 
 body {
     background: #aec8f4;
@@ -24,10 +21,8 @@ body {
     -webkit-touch-callout: none;
 }
 
-
 #app {
     position: fixed;
-
     inset: 0;
 
     width: 100%;
@@ -37,9 +32,9 @@ body {
 
     background:
         radial-gradient(
-            ellipse at center,
-            rgba(255,255,255,.12),
-            transparent 65%
+            circle at 50% 42%,
+            rgba(255,255,255,.18),
+            transparent 55%
         ),
         #aec8f4;
 }
@@ -51,7 +46,6 @@ body {
 
 #canvas {
     position: absolute;
-
     inset: 0;
 
     width: 100%;
@@ -68,98 +62,136 @@ body {
 
 
 /* =========================================
-   TUTORIAL KATMANI
+   TUTORIAL
 ========================================= */
 
 #tutorial {
     position: absolute;
-
     inset: 0;
 
-    z-index: 30;
+    z-index: 10;
 
     display: flex;
 
     flex-direction: column;
 
-    justify-content: center;
-
     align-items: center;
 
-    padding: 30px;
+    justify-content: center;
 
     pointer-events: none;
 
     transition:
-        opacity .7s ease,
-        transform .7s ease;
+        opacity .65s ease,
+        transform .65s cubic-bezier(.22,1,.36,1);
 }
-
-
-#tutorialText {
-    min-height: 1.3em;
-
-    color: #e34469;
-
-    font-family:
-        Georgia,
-        "Times New Roman",
-        serif;
-
-    font-size: clamp(
-        30px,
-        5vw,
-        70px
-    );
-
-    font-weight: 500;
-
-    line-height: 1.2;
-
-    text-align: center;
-
-    text-shadow:
-        0 4px 20px
-        rgba(150,50,90,.12);
-}
-
-
-#tutorialHint {
-    margin-top: 22px;
-
-    color:
-        rgba(100,65,100,.65);
-
-    font-family:
-        Arial,
-        sans-serif;
-
-    font-size: 14px;
-
-    letter-spacing: .5px;
-
-    opacity: .8;
-
-    transition:
-        opacity .4s ease;
-}
-
-
-/*
- * Tutorial bittiğinde
- * bütün katman kaybolur.
- */
 
 #tutorial.finished {
     opacity: 0;
 
     transform:
-        scale(1.04);
+        scale(1.06);
 }
 
 
 /* =========================================
-   ÇİÇEK ÇİZİM MESAJI
+   "HARFİ ÇİZ"
+========================================= */
+
+#tutorialTitle {
+    margin-bottom: 12px;
+
+    color:
+        rgba(104,70,104,.68);
+
+    font-family:
+        "Trebuchet MS",
+        Arial,
+        sans-serif;
+
+    font-size: 14px;
+
+    font-weight: 600;
+
+    letter-spacing: 2px;
+
+    text-transform: uppercase;
+}
+
+
+/* =========================================
+   HEDEF HARF
+========================================= */
+
+#targetLetter {
+    color:
+        rgba(227,68,105,.28);
+
+    font-family:
+        "Trebuchet MS",
+        "Arial Rounded MT Bold",
+        Arial,
+        sans-serif;
+
+    font-size:
+        clamp(
+            190px,
+            30vw,
+            360px
+        );
+
+    font-weight: 700;
+
+    line-height: .9;
+
+    text-align: center;
+
+    text-shadow:
+        0 10px 35px
+        rgba(150,70,110,.08);
+
+    transform:
+        scale(.92);
+
+    opacity: 0;
+
+    transition:
+        opacity .3s ease,
+        transform .45s
+        cubic-bezier(.22,1,.36,1);
+}
+
+#targetLetter.visible {
+    opacity: 1;
+
+    transform:
+        scale(1);
+}
+
+
+/* =========================================
+   İLERLEME
+========================================= */
+
+#tutorialProgress {
+    margin-top: 26px;
+
+    color:
+        rgba(104,70,104,.55);
+
+    font-family:
+        "Trebuchet MS",
+        Arial,
+        sans-serif;
+
+    font-size: 13px;
+
+    letter-spacing: 1px;
+}
+
+
+/* =========================================
+   TAMAMLAMA MESAJI
 ========================================= */
 
 #message {
@@ -168,44 +200,75 @@ body {
     left: 50%;
     top: 50%;
 
-    transform:
-        translate(-50%, -50%);
-
-    z-index: 5;
+    z-index: 15;
 
     width: max-content;
     max-width: 90vw;
 
     text-align: center;
 
-    color: #e34469;
-
-    font-family:
-        Georgia,
-        "Times New Roman",
-        serif;
-
-    font-size: clamp(
-        28px,
-        4.5vw,
-        64px
-    );
-
-    font-weight: 500;
-
-    line-height: 1.2;
-
-    pointer-events: none;
+    transform:
+        translate(-50%, -50%)
+        scale(.94);
 
     opacity: 0;
 
+    pointer-events: none;
+
+    color: #e34469;
+
+    font-family:
+        "Trebuchet MS",
+        "Arial Rounded MT Bold",
+        Arial,
+        sans-serif;
+
+    font-size:
+        clamp(
+            28px,
+            5vw,
+            58px
+        );
+
+    font-weight: 700;
+
+    line-height: 1.25;
+
+    text-shadow:
+        0 6px 25px
+        rgba(140,50,90,.12);
+
     transition:
-        opacity .6s ease,
-        transform .6s ease;
+        opacity .65s ease,
+        transform .65s
+        cubic-bezier(.22,1,.36,1);
 }
 
+#message span {
+    display: block;
 
-#message.ready {
+    margin-top: 10px;
+
+    color:
+        rgba(104,70,104,.72);
+
+    font-family:
+        Arial,
+        sans-serif;
+
+    font-size:
+        clamp(
+            14px,
+            2vw,
+            18px
+        );
+
+    font-weight: 500;
+
+    letter-spacing: .4px;
+}
+
+#message.show {
     opacity: 1;
 
     transform:
@@ -214,17 +277,8 @@ body {
 }
 
 
-#message.drawing {
-    opacity: 0;
-
-    transform:
-        translate(-50%, -50%)
-        scale(.94);
-}
-
-
 /* =========================================
-   TEMİZLE BUTONU
+   TEMİZLE
 ========================================= */
 
 #clearButton {
@@ -233,7 +287,7 @@ body {
     right: 22px;
     bottom: 22px;
 
-    z-index: 40;
+    z-index: 30;
 
     border: none;
 
@@ -254,17 +308,16 @@ body {
 
     cursor: pointer;
 
-    box-shadow:
-        0 4px 15px
-        rgba(80,40,90,.12);
-
-    backdrop-filter: blur(8px);
-
-    -webkit-backdrop-filter: blur(8px);
-
     opacity: 0;
 
     pointer-events: none;
+
+    box-shadow:
+        0 5px 18px
+        rgba(80,40,90,.12);
+
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
 
     transition:
         opacity .5s ease,
@@ -272,25 +325,18 @@ body {
         background .2s ease;
 }
 
-
-/*
- * Tutorial bittikten sonra buton aktif.
- */
-
-#clearButton.ready {
+#clearButton.show {
     opacity: 1;
 
     pointer-events: auto;
 }
 
-
 #clearButton:hover {
-    background: white;
+    background: #fff;
 
     transform:
         translateY(-2px);
 }
-
 
 #clearButton:active {
     transform:
@@ -299,51 +345,36 @@ body {
 
 
 /* =========================================
-   TELEFON
+   MOBİL
 ========================================= */
 
 @media (max-width: 600px) {
 
-    #tutorialText {
-        max-width: 90vw;
+    #tutorialTitle {
+        font-size: 12px;
 
-        font-size: 30px;
+        letter-spacing: 1.5px;
     }
 
-
-    #tutorialHint {
-        font-size: 13px;
+    #targetLetter {
+        font-size:
+            clamp(
+                160px,
+                48vw,
+                280px
+            );
     }
 
+    #tutorialProgress {
+        margin-top: 20px;
 
-    #message {
-        max-width: 86vw;
-
-        font-size: 30px;
+        font-size: 12px;
     }
-
 
     #clearButton {
         right: 15px;
         bottom: 15px;
 
         padding: 10px 15px;
-    }
-}
-
-
-/* =========================================
-   KÜÇÜK TELEFON
-========================================= */
-
-@media (max-width: 380px) {
-
-    #tutorialText {
-        font-size: 26px;
-    }
-
-
-    #message {
-        font-size: 26px;
     }
 }
