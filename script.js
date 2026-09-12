@@ -19,11 +19,11 @@ let drawing = false;
 let activePointer = null;
 let lastX = 0;
 let lastY = 0;
-let drawnDistance = 0;
+let hitPoints = 0;
 let isTransitioning = false;
 
-const REQUIRED_DISTANCE = 350; // Harfi geçmek için ekranda çizilmesi gereken toplam mesafe (piksel)
-const FLOWER_SPACING = 25;     // Çiçeklerin arasındaki mesafe
+const REQUIRED_HITS = 14;      // Harfin hitbox alanı içinde toplanması gereken dokunma sayısı
+const FLOWER_SPACING = 18;     // Çiçek çizim aralığı
 
 function resizeCanvas() {
     canvas.width = window.innerWidth;
@@ -95,7 +95,7 @@ function showCurrentLetter() {
 
     const char = CHARS_LIST[currentIndex];
     flowers = []; 
-    drawnDistance = 0;
+    hitPoints = 0;
     isTransitioning = false;
 
     targetLetter.textContent = char;
@@ -105,10 +105,7 @@ function showCurrentLetter() {
 }
 
 function addFlower(x, y) {
-    if (isTransitioning) return;
-
-    // Serbest modda ve tutorialda max çiçek sınırı (eski çiçekler arkadan yumuşakça silinir)
-    const limit = tutorialMode ? 100 : 150;
+    const limit = tutorialMode ? 100 : 200;
     if (flowers.length > limit) {
         flowers.shift();
     }
@@ -122,7 +119,7 @@ function addFlower(x, y) {
         rotation: Math.random() * Math.PI * 2,
         hue: -12 + Math.random() * 24,
         born: performance.now(),
-        life: tutorialMode ? 25000 : 7000, // Serbest modda eski çiçekler 7 saniyede pürüzsüzce silinir
+        life: tutorialMode ? 25000 : 8000, // Serbest modda eski çiçekler arkadan pürüzsüzce silinir
         isBurst: false
     });
 }
@@ -182,28 +179,49 @@ canvas.addEventListener("pointerdown", (e) => {
     drawing = true;
     lastX = e.clientX;
     lastY = e.clientY;
+    
     addFlower(lastX, lastY);
+
+    if (tutorialMode && !isTransitioning) {
+        const rect = targetLetter.getBoundingClientRect();
+        // Harfin ekrandaki hitbox alanı içinde mi tıklandı kontrolü
+        if (e.clientX >= rect.left - 30 && e.clientX <= rect.right + 30 &&
+            e.clientY >= rect.top - 30 && e.clientY <= rect.bottom + 30) {
+            hitPoints++;
+            if (hitPoints >= REQUIRED_HITS) {
+                isTransitioning = true;
+                targetLetter.classList.remove("visible");
+                currentIndex++;
+                setTimeout(showCurrentLetter, 200);
+            }
+        }
+    }
 });
 
 canvas.addEventListener("pointermove", (e) => {
-    if (!drawing || e.pointerId !== activePointer || isTransitioning) return;
+    if (!drawing || e.pointerId !== activePointer) return;
 
     const dx = e.clientX - lastX;
     const dy = e.clientY - lastY;
     const dist = Math.hypot(dx, dy);
 
-    if (dist > 4) {
+    if (dist >= FLOWER_SPACING) {
         lastX = e.clientX;
         lastY = e.clientY;
         addFlower(lastX, lastY);
 
-        if (tutorialMode) {
-            drawnDistance += dist;
-            if (drawnDistance >= REQUIRED_DISTANCE) {
-                isTransitioning = true;
-                targetLetter.classList.remove("visible");
-                currentIndex++;
-                setTimeout(showCurrentLetter, 200);
+        if (tutorialMode && !isTransitioning) {
+            const rect = targetLetter.getBoundingClientRect();
+            // Harfin hitbox alanı içinde mi çiziliyor kontrolü
+            if (e.clientX >= rect.left - 30 && e.clientX <= rect.right + 30 &&
+                e.clientY >= rect.top - 30 && e.clientY <= rect.bottom + 30) {
+                hitPoints++;
+                if (hitPoints >= REQUIRED_HITS) {
+                    isTransitioning = true;
+                    targetLetter.classList.remove("visible");
+                    currentIndex++;
+                    setTimeout(showCurrentLetter, 200);
+                }
             }
         }
     }
