@@ -1,54 +1,85 @@
-const canvas = document.getElementById("canvas");
-const ctx = canvas.getContext("2d");
+const canvas =
+    document.getElementById("canvas");
 
-const message = document.getElementById("message");
-const clearButton = document.getElementById("clearButton");
+const ctx =
+    canvas.getContext("2d");
+
+
+const message =
+    document.getElementById("message");
+
+
+const clearButton =
+    document.getElementById("clearButton");
+
+
+const tutorial =
+    document.getElementById("tutorial");
+
+
+const tutorialText =
+    document.getElementById("tutorialText");
+
+
+const tutorialHint =
+    document.getElementById("tutorialHint");
 
 
 /* =========================================
    AYARLAR
 ========================================= */
 
-/*
- * Çiçekler arasındaki mesafe.
- *
- * Küçültürsen daha sık çiçek oluşur.
- * Büyütürsen daha seyrek olur.
- */
 const FLOWER_DISTANCE = 13;
 
-
-/*
- * Çiçek boyutları.
- */
 const MIN_FLOWER_SIZE = 11;
 const MAX_FLOWER_SIZE = 23;
 
-
-/*
- * Aynı anda tutulabilecek maksimum çiçek.
- */
 const MAX_FLOWERS = 1100;
 
 
 /*
- * Çiçeğin ekranda kalma süresi.
- *
- * 8500 = 8.5 saniye
+ * Çiçeklerin yaşam süresi.
  */
 const FLOWER_LIFE = 8500;
 
-
-/*
- * Kaybolma süresi.
- *
- * Son 1.3 saniyede yavaşça görünmez olur.
- */
 const FADE_TIME = 1300;
 
 
+/*
+ * Tutorial yazısı.
+ */
+const TUTORIAL_TEXT =
+    "Valorant girl pick me olma";
+
+
+/*
+ * Harflerin çıkış hızı.
+ *
+ * Daha küçük = daha hızlı.
+ */
+const LETTER_DELAY = 105;
+
+
 /* =========================================
-   CANVAS BOYUTU
+   DURUM
+========================================= */
+
+let tutorialFinished = false;
+
+let drawing = false;
+
+let activePointer = null;
+
+let lastX = 0;
+let lastY = 0;
+
+let distanceSinceFlower = 0;
+
+const flowers = [];
+
+
+/* =========================================
+   CANVAS
 ========================================= */
 
 let dpr =
@@ -79,6 +110,7 @@ function resizeCanvas() {
             width * dpr
         );
 
+
     canvas.height =
         Math.round(
             height * dpr
@@ -87,6 +119,7 @@ function resizeCanvas() {
 
     canvas.style.width =
         width + "px";
+
 
     canvas.style.height =
         height + "px";
@@ -110,26 +143,6 @@ window.addEventListener(
     "resize",
     resizeCanvas
 );
-
-
-/* =========================================
-   DURUM
-========================================= */
-
-let drawing = false;
-
-let activePointer = null;
-
-let lastX = 0;
-let lastY = 0;
-
-let distanceSinceFlower = 0;
-
-
-/*
- * Bütün çiçekler burada tutulur.
- */
-const flowers = [];
 
 
 /* =========================================
@@ -158,9 +171,6 @@ function distance(
 }
 
 
-/*
- * Yumuşak animasyon.
- */
 function easeOutCubic(t) {
 
     return 1 -
@@ -172,15 +182,327 @@ function easeOutCubic(t) {
 
 
 /* =========================================
+   SES SİSTEMİ
+========================================= */
+
+let audioContext = null;
+
+
+/*
+ * Kullanıcı etkileşimiyle AudioContext
+ * başlatılır.
+ */
+function initAudio() {
+
+    if (!audioContext) {
+
+        const AudioContext =
+            window.AudioContext ||
+            window.webkitAudioContext;
+
+
+        if (!AudioContext) {
+            return;
+        }
+
+
+        audioContext =
+            new AudioContext();
+    }
+
+
+    if (
+        audioContext.state ===
+        "suspended"
+    ) {
+
+        audioContext.resume();
+    }
+}
+
+
+/*
+ * Küçük ve tatlı bir bildirim sesi.
+ */
+function playPopSound() {
+
+    if (!audioContext) {
+        return;
+    }
+
+
+    const now =
+        audioContext.currentTime;
+
+
+    const oscillator =
+        audioContext.createOscillator();
+
+
+    const gain =
+        audioContext.createGain();
+
+
+    oscillator.type =
+        "sine";
+
+
+    /*
+     * Hafif yukarı çıkan
+     * tatlı bir ton.
+     */
+    oscillator.frequency
+        .setValueAtTime(
+            520,
+            now
+        );
+
+
+    oscillator.frequency
+        .exponentialRampToValueAtTime(
+            780,
+            now + .08
+        );
+
+
+    gain.gain
+        .setValueAtTime(
+            0.0001,
+            now
+        );
+
+
+    gain.gain
+        .exponentialRampToValueAtTime(
+            0.09,
+            now + .015
+        );
+
+
+    gain.gain
+        .exponentialRampToValueAtTime(
+            0.0001,
+            now + .13
+        );
+
+
+    oscillator.connect(gain);
+
+    gain.connect(
+        audioContext.destination
+    );
+
+
+    oscillator.start(now);
+
+    oscillator.stop(
+        now + .14
+    );
+}
+
+
+/*
+ * Tutorial tamamlanınca
+ * biraz daha güzel bir ses.
+ */
+function playCompleteSound() {
+
+    if (!audioContext) {
+        return;
+    }
+
+
+    const now =
+        audioContext.currentTime;
+
+
+    [0, .09, .18].forEach(
+        (offset, index) => {
+
+            const oscillator =
+                audioContext
+                    .createOscillator();
+
+
+            const gain =
+                audioContext
+                    .createGain();
+
+
+            oscillator.type =
+                "sine";
+
+
+            const frequencies =
+                [
+                    520,
+                    660,
+                    820
+                ];
+
+
+            oscillator.frequency
+                .setValueAtTime(
+                    frequencies[index],
+                    now + offset
+                );
+
+
+            gain.gain
+                .setValueAtTime(
+                    0.0001,
+                    now + offset
+                );
+
+
+            gain.gain
+                .exponentialRampToValueAtTime(
+                    0.08,
+                    now + offset + .02
+                );
+
+
+            gain.gain
+                .exponentialRampToValueAtTime(
+                    0.0001,
+                    now + offset + .16
+                );
+
+
+            oscillator.connect(gain);
+
+            gain.connect(
+                audioContext.destination
+            );
+
+
+            oscillator.start(
+                now + offset
+            );
+
+
+            oscillator.stop(
+                now + offset + .17
+            );
+        }
+    );
+}
+
+
+/* =========================================
+   TUTORIAL ÇİÇEK PATLAMASI
+========================================= */
+
+function tutorialFlowerBurst(
+    x,
+    y
+) {
+
+    /*
+     * Büyük merkez çiçek.
+     */
+    addFlower(
+        x,
+        y,
+        32
+    );
+
+
+    /*
+     * Etrafına dairesel
+     * çiçek patlaması.
+     */
+    const count = 16;
+
+
+    for (
+        let i = 0;
+        i < count;
+        i++
+    ) {
+
+        const angle =
+            (
+                Math.PI * 2 /
+                count
+            ) * i;
+
+
+        const radius =
+            random(
+                35,
+                90
+            );
+
+
+        const burstX =
+            x +
+            Math.cos(angle) *
+            radius;
+
+
+        const burstY =
+            y +
+            Math.sin(angle) *
+            radius;
+
+
+        addFlower(
+            burstX,
+            burstY,
+            random(13, 27)
+        );
+    }
+
+
+    /*
+     * Birkaç küçük çiçek daha.
+     */
+    for (
+        let i = 0;
+        i < 8;
+        i++
+    ) {
+
+        const angle =
+            random(
+                0,
+                Math.PI * 2
+            );
+
+
+        const radius =
+            random(
+                90,
+                135
+            );
+
+
+        addFlower(
+            x +
+            Math.cos(angle) *
+            radius,
+
+            y +
+            Math.sin(angle) *
+            radius,
+
+            random(8, 16)
+        );
+    }
+}
+
+
+/* =========================================
    ÇİÇEK EKLE
 ========================================= */
 
-function addFlower(x, y) {
+function addFlower(
+    x,
+    y,
+    forcedSize = null
+) {
 
-    /*
-     * Performansı korumak için
-     * maksimum sayıyı geçmiyoruz.
-     */
     if (
         flowers.length >=
         MAX_FLOWERS
@@ -197,10 +519,12 @@ function addFlower(x, y) {
         y: y,
 
         size:
-            random(
-                MIN_FLOWER_SIZE,
-                MAX_FLOWER_SIZE
-            ),
+            forcedSize !== null
+                ? forcedSize
+                : random(
+                    MIN_FLOWER_SIZE,
+                    MAX_FLOWER_SIZE
+                ),
 
         rotation:
             random(
@@ -216,7 +540,7 @@ function addFlower(x, y) {
 
         alpha:
             random(
-                0.78,
+                .78,
                 1
             ),
 
@@ -227,7 +551,14 @@ function addFlower(x, y) {
             ),
 
         createdAt:
-            performance.now()
+            performance.now(),
+
+        /*
+         * Tutorial çiçekleri
+         * biraz daha hızlı büyür.
+         */
+        tutorial:
+            !tutorialFinished
     });
 }
 
@@ -246,9 +577,6 @@ function drawFlower(
         flower.createdAt;
 
 
-    /*
-     * Ömrü bittiyse çizme.
-     */
     if (
         age >=
         FLOWER_LIFE
@@ -258,13 +586,20 @@ function drawFlower(
     }
 
 
-    /* -------------------------------------
-       Çiçeğin ortaya çıkışı
-    ------------------------------------- */
+    /*
+     * Tutorial patlamalarında
+     * daha hızlı büyüme.
+     */
+    const birthDuration =
+        flower.tutorial
+            ? 180
+            : 280;
+
 
     const birthProgress =
         Math.min(
-            age / 280,
+            age /
+            birthDuration,
             1
         );
 
@@ -276,7 +611,7 @@ function drawFlower(
 
 
     /* -------------------------------------
-       Çiçeğin kaybolması
+       FADE OUT
     ------------------------------------- */
 
     let lifeAlpha = 1;
@@ -302,15 +637,15 @@ function drawFlower(
 
 
     /* -------------------------------------
-       Hafif canlılık
+       HAFİF CANLILIK
     ------------------------------------- */
 
     const pulse =
         1 +
         Math.sin(
-            time * 0.0015 +
+            time * .0015 +
             flower.phase
-        ) * 0.025;
+        ) * .025;
 
 
     const scale =
@@ -391,7 +726,7 @@ function drawFlower(
         const gradient =
             ctx.createLinearGradient(
                 0,
-                -size * 0.1,
+                -size * .1,
                 0,
                 -size
             );
@@ -399,19 +734,19 @@ function drawFlower(
 
         gradient.addColorStop(
             0,
-            `hsl(${hue}, 66%, 78%)`
+            `hsl(${hue},66%,78%)`
         );
 
 
         gradient.addColorStop(
-            0.5,
-            `hsl(${hue - 2}, 63%, 72%)`
+            .5,
+            `hsl(${hue - 2},63%,72%)`
         );
 
 
         gradient.addColorStop(
             1,
-            `hsl(${hue + 4}, 60%, 88%)`
+            `hsl(${hue + 4},60%,88%)`
         );
 
 
@@ -419,25 +754,21 @@ function drawFlower(
             gradient;
 
 
-        /*
-         * Organik petal şekli.
-         */
-
         ctx.beginPath();
 
 
         ctx.moveTo(
             0,
-            -size * 0.12
+            -size * .12
         );
 
 
         ctx.bezierCurveTo(
-            -size * 0.45,
-            -size * 0.42,
+            -size * .45,
+            -size * .42,
 
-            -size * 0.48,
-            -size * 0.88,
+            -size * .48,
+            -size * .88,
 
             0,
             -size
@@ -445,14 +776,14 @@ function drawFlower(
 
 
         ctx.bezierCurveTo(
-            size * 0.48,
-            -size * 0.88,
+            size * .48,
+            -size * .88,
 
-            size * 0.45,
-            -size * 0.42,
+            size * .45,
+            -size * .42,
 
             0,
-            -size * 0.12
+            -size * .12
         );
 
 
@@ -464,7 +795,7 @@ function drawFlower(
 
 
     /* -------------------------------------
-       ÇİÇEK MERKEZİ
+       MERKEZ
     ------------------------------------- */
 
     ctx.shadowBlur = 3;
@@ -477,7 +808,7 @@ function drawFlower(
             1,
             0,
             0,
-            size * 0.27
+            size * .27
         );
 
 
@@ -488,7 +819,7 @@ function drawFlower(
 
 
     center.addColorStop(
-        0.55,
+        .55,
         "#f4a16e"
     );
 
@@ -509,7 +840,7 @@ function drawFlower(
     ctx.arc(
         0,
         0,
-        size * 0.23,
+        size * .23,
         0,
         Math.PI * 2
     );
@@ -536,9 +867,6 @@ function render(time) {
     );
 
 
-    /*
-     * Eski çiçekleri temizle.
-     */
     for (
         let i =
             flowers.length - 1;
@@ -552,10 +880,6 @@ function render(time) {
             flowers[i];
 
 
-        /*
-         * Çiçeğin ömrü bittiyse
-         * listeden çıkar.
-         */
         if (
             time -
             flower.createdAt
@@ -591,7 +915,217 @@ requestAnimationFrame(
 
 
 /* =========================================
-   ÇİZGİ BOYUNCA ÇİÇEKLER
+   TUTORIAL
+========================================= */
+
+async function startTutorial() {
+
+    /*
+     * Audio sistemini hazırla.
+     */
+    initAudio();
+
+
+    tutorialHint.textContent =
+        "Küçük bir şey göstereceğim...";
+
+
+    /*
+     * Biraz bekle.
+     */
+    await wait(700);
+
+
+    /*
+     * Her harfi tek tek yaz.
+     */
+    for (
+        let i = 0;
+        i < TUTORIAL_TEXT.length;
+        i++
+    ) {
+
+        const character =
+            TUTORIAL_TEXT[i];
+
+
+        tutorialText.textContent =
+            TUTORIAL_TEXT.substring(
+                0,
+                i + 1
+            );
+
+
+        /*
+         * Boşluklarda patlama
+         * yapmıyoruz.
+         */
+        if (
+            character !== " "
+        ) {
+
+            /*
+             * Harfin yaklaşık olarak
+             * ekrandaki konumunu bul.
+             */
+            const rect =
+                tutorialText
+                    .getBoundingClientRect();
+
+
+            const textWidth =
+                rect.width;
+
+
+            const fontSize =
+                parseFloat(
+                    getComputedStyle(
+                        tutorialText
+                    ).fontSize
+                );
+
+
+            /*
+             * Son karakterin yaklaşık
+             * konumunu hesapla.
+             */
+            const characterWidth =
+                fontSize * .55;
+
+
+            const currentTextWidth =
+                characterWidth *
+                (i + 1);
+
+
+            const x =
+                window.innerWidth / 2 -
+                textWidth / 2 +
+                currentTextWidth -
+                characterWidth / 2;
+
+
+            const y =
+                window.innerHeight / 2;
+
+
+            /*
+             * Büyük çiçek patlaması.
+             */
+            tutorialFlowerBurst(
+                x,
+                y
+            );
+
+
+            /*
+             * Tatlı pop sesi.
+             */
+            playPopSound();
+        }
+
+
+        await wait(
+            LETTER_DELAY
+        );
+    }
+
+
+    /* -------------------------------------
+       CÜMLE TAMAMLANDI
+    ------------------------------------- */
+
+    await wait(700);
+
+
+    tutorialHint.textContent =
+        "Tutorial bitti 🌸";
+
+
+    playCompleteSound();
+
+
+    /*
+     * Büyük son patlama.
+     */
+    tutorialFlowerBurst(
+        window.innerWidth / 2,
+        window.innerHeight / 2
+    );
+
+
+    await wait(1000);
+
+
+    /*
+     * Tutorial yazısını değiştir.
+     */
+    tutorialText.textContent =
+        "Tutorial bitti 🌸";
+
+
+    tutorialHint.textContent =
+        "Artık istediğini çizebilirsin.";
+
+
+    await wait(1300);
+
+
+    /*
+     * Tutorial kapanıyor.
+     */
+    tutorial.classList.add(
+        "finished"
+    );
+
+
+    /*
+     * Çizim artık aktif.
+     */
+    tutorialFinished = true;
+
+
+    /*
+     * Normal çizim mesajını göster.
+     */
+    message.classList.add(
+        "ready"
+    );
+
+
+    clearButton.classList.add(
+        "ready"
+    );
+
+
+    await wait(700);
+
+
+    /*
+     * Tutorial çiçeklerinin
+     * etkisi de artık normal.
+     */
+}
+
+
+/* =========================================
+   BEKLEME
+========================================= */
+
+function wait(ms) {
+
+    return new Promise(
+        resolve =>
+            setTimeout(
+                resolve,
+                ms
+            )
+    );
+}
+
+
+/* =========================================
+   ÇİZGİ
 ========================================= */
 
 function drawLine(
@@ -603,6 +1137,7 @@ function drawLine(
 
     const dx =
         x2 - x1;
+
 
     const dy =
         y2 - y1;
@@ -624,10 +1159,7 @@ function drawLine(
 
 
     /*
-     * Çok sık ara nokta.
-     *
-     * Hızlı parmak hareketlerinde
-     * boşluk oluşmasını engeller.
+     * Çok sık örnekleme.
      */
     const steps =
         Math.ceil(
@@ -668,10 +1200,6 @@ function drawLine(
             segment;
 
 
-        /*
-         * Çiçekler arasındaki mesafeyi
-         * tam olarak koruyoruz.
-         */
         while (
             distanceSinceFlower >=
             FLOWER_DISTANCE
@@ -713,6 +1241,7 @@ function drawLine(
             lastX =
                 flowerX;
 
+
             lastY =
                 flowerY;
         }
@@ -732,15 +1261,29 @@ function drawLine(
 function startDrawing(event) {
 
     /*
-     * Aynı anda ikinci pointer
-     * ile çizim yapılmasını engelle.
+     * Tutorial bitmediyse çizme.
      */
+    if (
+        !tutorialFinished
+    ) {
+
+        return;
+    }
+
+
     if (
         activePointer !== null
     ) {
 
         return;
     }
+
+
+    /*
+     * İlk kullanıcı hareketinde
+     * sesi garantiye al.
+     */
+    initAudio();
 
 
     activePointer =
@@ -761,27 +1304,22 @@ function startDrawing(event) {
     distanceSinceFlower = 0;
 
 
-    /*
-     * Yazıyı gizle.
-     */
+    message.classList.remove(
+        "ready"
+    );
+
+
     message.classList.add(
         "drawing"
     );
 
 
-    /*
-     * İlk çiçek.
-     */
     addFlower(
         lastX,
         lastY
     );
 
 
-    /*
-     * Parmak/mouse canvas dışına
-     * çıksa bile pointer'ı takip et.
-     */
     try {
 
         canvas.setPointerCapture(
@@ -798,7 +1336,10 @@ function startDrawing(event) {
 
 function moveDrawing(event) {
 
-    if (!drawing) {
+    if (
+        !drawing
+    ) {
+
         return;
     }
 
@@ -827,7 +1368,10 @@ function moveDrawing(event) {
 
 function stopDrawing(event) {
 
-    if (!drawing) {
+    if (
+        !drawing
+    ) {
+
         return;
     }
 
@@ -845,14 +1389,6 @@ function stopDrawing(event) {
     drawing = false;
 
     activePointer = null;
-
-
-    /*
-     * Yazıyı tekrar göstermiyoruz.
-     *
-     * Kullanıcı tekrar çizmeye
-     * başlayana kadar gizli kalır.
-     */
 
 
     try {
@@ -890,4 +1426,64 @@ canvas.addEventListener(
 );
 
 
-canvas.addEventListener
+canvas.addEventListener(
+    "pointercancel",
+    stopDrawing
+);
+
+
+/* =========================================
+   FOCUS KAYBI
+========================================= */
+
+window.addEventListener(
+    "blur",
+    () => {
+
+        drawing = false;
+
+        activePointer = null;
+    }
+);
+
+
+/* =========================================
+   TEMİZLE
+========================================= */
+
+clearButton.addEventListener(
+    "click",
+    () => {
+
+        flowers.length = 0;
+
+
+        distanceSinceFlower = 0;
+
+
+        drawing = false;
+
+
+        activePointer = null;
+
+
+        /*
+         * Çizim mesajını tekrar göster.
+         */
+        message.classList.remove(
+            "drawing"
+        );
+
+
+        message.classList.add(
+            "ready"
+        );
+    }
+);
+
+
+/* =========================================
+   BAŞLAT
+========================================= */
+
+startTutorial();
