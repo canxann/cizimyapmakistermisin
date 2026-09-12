@@ -1,443 +1,392 @@
-/* =========================================
-   FLOWERS FOR YOU
-   Mouse + Touch Flower Trail
-========================================= */
-
-
-/* =========================
-   AYARLAR
-========================= */
-
-const scene = document.getElementById("scene");
-const ring = document.getElementById("flowerRing");
-const cursorFlowers =
-    document.getElementById("cursorFlowers");
-
-
-/* Mouse/parmak konumu */
-
-let pointer = {
-    x: window.innerWidth / 2,
-    y: window.innerHeight / 2
-};
-
-let lastPointer = {
-    x: pointer.x,
-    y: pointer.y
-};
-
-
-/* =========================
-   ÇİÇEK OLUŞTURMA
-========================= */
-
-function createFlower(className, size = 50) {
-
-    const flower = document.createElement("div");
-
-    flower.className = className;
-
-    flower.style.setProperty(
-        "--size",
-        `${size}px`
-    );
-
-    flower.style.setProperty(
-        "--rotation",
-        `${Math.random() * 40 - 20}deg`
-    );
-
-
-    /* 5-7 yaprak */
-
-    const petalCount =
-        Math.floor(Math.random() * 3) + 5;
-
-
-    for (let i = 0; i < petalCount; i++) {
-
-        const petal =
-            document.createElement("div");
-
-        petal.className = "petal";
-
-        petal.style.setProperty(
-            "--angle",
-            `${(360 / petalCount) * i}deg`
-        );
-
-        flower.appendChild(petal);
-    }
-
-
-    /* Merkez */
-
-    const center =
-        document.createElement("div");
-
-    center.className =
-        "flower-center";
-
-    flower.appendChild(center);
-
-
-    return flower;
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
 }
 
-
-/* =========================
-   HALKA ÇİÇEKLERİ
-========================= */
-
-function createRingFlowers() {
-
-    const count =
-        window.innerWidth < 600
-            ? 32
-            : 45;
-
-
-    for (let i = 0; i < count; i++) {
-
-        const flower =
-            createFlower(
-                "ring-flower",
-                25 + Math.random() * 50
-            );
-
-
-        const angle =
-            (360 / count) * i
-            + Math.random() * 8;
-
-
-        /*
-          Elips şeklinde halka
-        */
-
-        const radiusX =
-            window.innerWidth < 600
-                ? 47
-                : 48;
-
-        const radiusY =
-            window.innerWidth < 600
-                ? 43
-                : 46;
-
-
-        const x =
-            50 +
-            Math.cos(
-                angle * Math.PI / 180
-            ) * radiusX;
-
-
-        const y =
-            50 +
-            Math.sin(
-                angle * Math.PI / 180
-            ) * radiusY;
-
-
-        flower.style.setProperty(
-            "--x",
-            `${x}%`
-        );
-
-        flower.style.setProperty(
-            "--y",
-            `${y}%`
-        );
-
-
-        flower.style.setProperty(
-            "--opacity",
-            `${0.65 + Math.random() * .35}`
-        );
-
-
-        flower.style.setProperty(
-            "--duration",
-            `${2 + Math.random() * 3}s`
-        );
-
-
-        ring.appendChild(flower);
-    }
+html,
+body {
+    width: 100%;
+    height: 100%;
 }
 
+body {
+    overflow: hidden;
 
-createRingFlowers();
-
-
-/* =========================
-   TAKİP ÇİÇEKLERİ
-========================= */
-
-const trail = [];
-
-const TRAIL_COUNT =
-    window.innerWidth < 600
-        ? 16
-        : 22;
-
-
-for (let i = 0; i < TRAIL_COUNT; i++) {
-
-    const flower =
-        createFlower(
-            "cursor-flower",
-            20 + Math.random() * 35
-        );
-
+    background: #aec8f4;
 
     /*
-      İlk çiçek büyük,
-      arkadakiler daha küçük
+       Çok önemli:
+       Telefonda parmakla çizim yaparken
+       sayfanın kaymasını engeller.
     */
+    touch-action: none;
 
-    const scale =
-        1 -
-        (i / TRAIL_COUNT) * .45;
+    user-select: none;
+    -webkit-user-select: none;
 
-
-    flower.dataset.index = i;
-
-    flower.style.setProperty(
-        "--size",
-        `${(25 + Math.random() * 35) * scale}px`
-    );
-
-
-    flower.style.setProperty(
-        "--rotation",
-        `${Math.random() * 360}deg`
-    );
-
-
-    cursorFlowers.appendChild(flower);
-
-    trail.push({
-        element: flower,
-
-        x: pointer.x,
-        y: pointer.y,
-
-        targetX: pointer.x,
-        targetY: pointer.y,
-
-        speed:
-            0.18 +
-            (1 - i / TRAIL_COUNT) * .12,
-
-        life: 0
-    });
+    -webkit-touch-callout: none;
 }
 
 
-/* =========================
-   POINTER
-   Mouse + Touch
-========================= */
+/* ==================================================
+   ANA ALAN
+================================================== */
 
-window.addEventListener(
-    "pointermove",
-    (event) => {
+#app {
+    position: relative;
 
-        pointer.x = event.clientX;
-        pointer.y = event.clientY;
+    width: 100vw;
+    height: 100vh;
 
-    },
-    {
-        passive: true
-    }
-);
+    overflow: hidden;
+
+    background:
+        radial-gradient(
+            circle at 50% 50%,
+            rgba(255, 255, 255, 0.13),
+            transparent 45%
+        ),
+        #aec8f4;
+}
+
+
+/* ==================================================
+   ORTADAKİ YAZI
+================================================== */
+
+#message {
+    position: absolute;
+
+    left: 50%;
+    top: 50%;
+
+    transform: translate(-50%, -50%);
+
+    z-index: 5;
+
+    width: max-content;
+    max-width: 90vw;
+
+    color: #e4496c;
+
+    font-family:
+        Georgia,
+        "Times New Roman",
+        serif;
+
+    font-size: clamp(
+        28px,
+        4.5vw,
+        64px
+    );
+
+    font-weight: 500;
+
+    line-height: 1.15;
+
+    text-align: center;
+
+    pointer-events: none;
+
+    transition:
+        opacity 0.5s ease,
+        transform 0.5s ease;
+}
 
 
 /*
-  Parmağı ekrana koyduğunda
-  çiçekleri hemen göster.
+   Çizim başlayınca yazı hafifçe
+   geri plana çekilir.
 */
 
-window.addEventListener(
-    "pointerdown",
-    (event) => {
+#message.drawing {
+    opacity: 0.18;
 
-        pointer.x = event.clientX;
-        pointer.y = event.clientY;
-
-        trail.forEach((flower) => {
-            flower.life = 1;
-        });
-
-    },
-    {
-        passive: true
-    }
-);
-
-
-/*
-  Parmak ekrandan kalkınca
-  çiçekler kaybolsun.
-*/
-
-window.addEventListener(
-    "pointerup",
-    () => {
-
-        trail.forEach((flower) => {
-            flower.life = 0;
-        });
-
-    },
-    {
-        passive: true
-    }
-);
-
-
-/* =========================
-   ANİMASYON
-========================= */
-
-function animate() {
-
-    /*
-      İlk çiçek mouse/parmağı takip eder.
-    */
-
-    let targetX = pointer.x;
-    let targetY = pointer.y;
-
-
-    trail.forEach((flower, index) => {
-
-        flower.targetX = targetX;
-        flower.targetY = targetY;
-
-
-        /*
-          Yumuşak takip
-        */
-
-        flower.x +=
-            (flower.targetX - flower.x)
-            * flower.speed;
-
-
-        flower.y +=
-            (flower.targetY - flower.y)
-            * flower.speed;
-
-
-        /*
-          Hafif doğal hareket
-        */
-
-        const wave =
-            Math.sin(
-                performance.now() * 0.002
-                + index
-            ) * 1.5;
-
-
-        flower.element.style.left =
-            `${flower.x}px`;
-
-
-        flower.element.style.top =
-            `${flower.y + wave}px`;
-
-
-        /*
-          Mouse hareket ediyorsa görünür,
-          yoksa yavaşça kaybolur.
-        */
-
-        const distance =
-            Math.hypot(
-                pointer.x - lastPointer.x,
-                pointer.y - lastPointer.y
-            );
-
-
-        if (distance > 0.5) {
-            flower.life += .06;
-        } else {
-            flower.life -= .015;
-        }
-
-
-        flower.life =
-            Math.max(
-                0,
-                Math.min(1, flower.life)
-            );
-
-
-        flower.element.style.opacity =
-            flower.life;
-
-
-        /*
-          Hafif dönme
-        */
-
-        const rotation =
-            Math.sin(
-                performance.now() * .001
-                + index
-            ) * 8;
-
-
-        flower.element.style.transform =
-            `translate(-50%, -50%)
-             rotate(${rotation}deg)`;
-
-
-        /*
-          Bir sonraki çiçek,
-          öncekini takip eder.
-        */
-
-        targetX = flower.x;
-        targetY = flower.y;
-    });
-
-
-    lastPointer.x +=
-        (pointer.x - lastPointer.x) * .15;
-
-    lastPointer.y +=
-        (pointer.y - lastPointer.y) * .15;
-
-
-    requestAnimationFrame(animate);
+    transform:
+        translate(-50%, -50%)
+        scale(0.96);
 }
 
 
-animate();
+/* ==================================================
+   ÇİZİM KATMANI
+================================================== */
+
+#drawingLayer {
+    position: absolute;
+
+    inset: 0;
+
+    z-index: 10;
+
+    pointer-events: none;
+}
 
 
-/* =========================
-   EKRAN BOYUTU DEĞİŞİNCE
-========================= */
+/* ==================================================
+   TEMEL ÇİÇEK
+================================================== */
 
-window.addEventListener(
-    "resize",
-    () => {
+.flower {
+    position: absolute;
 
-        /*
-          Sayfayı yenilemeden
-          konumu güncelle.
-        */
+    width: var(--flower-size, 30px);
+    height: var(--flower-size, 30px);
 
-        pointer.x =
-            window.innerWidth / 2;
+    pointer-events: none;
 
-        pointer.y =
-            window.innerHeight / 2;
+    transform:
+        translate(-50%, -50%)
+        rotate(var(--rotation, 0deg));
+
+    filter:
+        drop-shadow(
+            0 4px 5px rgba(95, 35, 75, 0.22)
+        );
+
+    will-change: transform;
+}
+
+
+/* ==================================================
+   YAPRAKLAR
+================================================== */
+
+.petal {
+    position: absolute;
+
+    left: 50%;
+    top: 50%;
+
+    width: 42%;
+    height: 68%;
+
+    transform-origin: 50% 100%;
+
+    border-radius:
+        55%
+        55%
+        45%
+        45%;
+
+    background:
+        linear-gradient(
+            145deg,
+            #fff0f8 0%,
+            #f4b1d0 38%,
+            #dc6798 100%
+        );
+
+    box-shadow:
+        inset
+        -2px -3px 5px
+        rgba(126, 48, 91, 0.12);
+}
+
+
+/*
+   Her yaprağın açısı
+*/
+
+.p1 {
+    transform:
+        translate(-50%, -100%)
+        rotate(0deg);
+}
+
+.p2 {
+    transform:
+        translate(-50%, -100%)
+        rotate(72deg);
+}
+
+.p3 {
+    transform:
+        translate(-50%, -100%)
+        rotate(144deg);
+}
+
+.p4 {
+    transform:
+        translate(-50%, -100%)
+        rotate(216deg);
+}
+
+.p5 {
+    transform:
+        translate(-50%, -100%)
+        rotate(288deg);
+}
+
+
+/* ==================================================
+   ÇİÇEK MERKEZİ
+================================================== */
+
+.center {
+    position: absolute;
+
+    left: 50%;
+    top: 50%;
+
+    width: 25%;
+    height: 25%;
+
+    transform: translate(-50%, -50%);
+
+    border-radius: 50%;
+
+    background:
+        radial-gradient(
+            circle,
+            #ffe6a7 0%,
+            #f4ae72 42%,
+            #d96587 100%
+        );
+
+    box-shadow:
+        0 1px 3px rgba(95, 35, 65, 0.28);
+}
+
+
+/* ==================================================
+   ÇİZİM ÇİÇEKLERİ
+================================================== */
+
+.drawing-flower {
+    animation:
+        flowerAppear 0.45s ease-out both,
+        flowerFloat
+        3.2s
+        ease-in-out
+        infinite;
+
+    animation-delay:
+        0s,
+        var(--float-delay, 0s);
+}
+
+
+/*
+   Çiçek çizgiye eklendiğinde
+   hafifçe büyüyerek gelsin.
+*/
+
+@keyframes flowerAppear {
+
+    0% {
+        opacity: 0;
+
+        transform:
+            translate(-50%, -50%)
+            scale(0.15)
+            rotate(0deg);
     }
-);
+
+    70% {
+        opacity: 1;
+
+        transform:
+            translate(-50%, -50%)
+            scale(1.08)
+            rotate(var(--rotation, 0deg));
+    }
+
+    100% {
+        opacity: 1;
+
+        transform:
+            translate(-50%, -50%)
+            scale(1)
+            rotate(var(--rotation, 0deg));
+    }
+}
+
+
+/*
+   Çok hafif canlılık.
+   Çiçek çizginin yerini değiştirmez.
+*/
+
+@keyframes flowerFloat {
+
+    0%,
+    100% {
+        margin-top: 0;
+    }
+
+    50% {
+        margin-top: -2px;
+    }
+}
+
+
+/* ==================================================
+   FIRÇA ÇİÇEĞİ
+================================================== */
+
+.brush-flower {
+    position: fixed;
+
+    left: 0;
+    top: 0;
+
+    z-index: 100;
+
+    opacity: 0;
+
+    transform:
+        translate(-50%, -50%)
+        scale(0.85);
+
+    transition:
+        opacity 0.15s ease;
+
+    pointer-events: none;
+}
+
+
+/*
+   Aktifken görünür
+*/
+
+.brush-flower.active {
+    opacity: 1;
+}
+
+
+/* ==================================================
+   MOBİL
+================================================== */
+
+@media (max-width: 600px) {
+
+    #message {
+        max-width: 88vw;
+
+        font-size: 31px;
+
+        white-space: normal;
+    }
+
+    .drawing-flower {
+        filter:
+            drop-shadow(
+                0 3px 4px
+                rgba(95, 35, 75, 0.20)
+            );
+    }
+}
+
+
+/* ==================================================
+   KÜÇÜK TELEFONLAR
+================================================== */
+
+@media (max-width: 380px) {
+
+    #message {
+        font-size: 27px;
+    }
+}
