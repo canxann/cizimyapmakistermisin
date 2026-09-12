@@ -20,26 +20,36 @@
 
 <div id="app">
 
+    <!-- Rehber / tutorial canvas -->
+    <canvas id="guideCanvas"></canvas>
+
+    <!-- Çiçek canvas -->
     <canvas id="canvas"></canvas>
 
-    <!-- Tutorial hedefi -->
-    <div id="tutorial">
 
-        <div id="tutorialTitle">
-            Harfi çiz
+    <div id="tutorialUI">
+
+        <div id="tutorialHint">
+            HARFİ ÇİZ
         </div>
 
-        <div id="targetLetter"></div>
+        <div id="letterText"></div>
 
-        <div id="tutorialProgress"></div>
+        <div id="progressText"></div>
 
     </div>
 
 
-    <!-- Tutorial sonrası mesaj -->
-    <div id="message">
-        Tutorial bitti 🌸<br>
-        <span>Artık istediğini çizebilirsin.</span>
+    <div id="completeMessage">
+
+        <div class="completeTitle">
+            Tutorial tamamlandı 🌸
+        </div>
+
+        <div class="completeSubtitle">
+            Artık istediğini çizebilirsin.
+        </div>
+
     </div>
 
 
@@ -48,6 +58,7 @@
     </button>
 
 </div>
+
 
 <script src="./script.js"></script>
 
