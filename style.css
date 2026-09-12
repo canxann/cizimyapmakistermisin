@@ -1,667 +1,210 @@
-/* =========================================================
-   FLOWERS FOR YOU
-   Mouse + Touch Drawing System
-========================================================= */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html,
+body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+body {
+    background: #aec8f4;
+
+    /*
+     * Telefonda parmakla çizerken
+     * sayfanın kaymasını engeller.
+     */
+    touch-action: none;
+
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+}
+
+#app {
+    position: fixed;
+
+    left: 0;
+    top: 0;
+
+    width: 100vw;
+    height: 100vh;
+
+    overflow: hidden;
+
+    background:
+        radial-gradient(
+            ellipse at center,
+            rgba(255,255,255,0.10),
+            transparent 65%
+        ),
+        #aec8f4;
+}
 
 
-const app =
-    document.getElementById("app");
+/* =========================================
+   CANVAS
+========================================= */
 
-const drawingLayer =
-    document.getElementById("drawingLayer");
+#canvas {
+    position: absolute;
 
-const message =
-    document.getElementById("message");
+    left: 0;
+    top: 0;
 
-const brushFlower =
-    document.getElementById("brushFlower");
+    width: 100%;
+    height: 100%;
 
+    z-index: 1;
 
-/* =========================================================
-   AYARLAR
-========================================================= */
+    display: block;
 
-
-/*
-   Çiçekler arasındaki mesafe.
-
-   Küçük değer:
-   Daha yoğun çizgi.
-
-   Büyük değer:
-   Daha seyrek çizgi.
-*/
-
-const FLOWER_DISTANCE = 18;
+    touch-action: none;
+}
 
 
-/*
-   Çok hızlı mouse hareketlerinde
-   aradaki boşlukları kapatmak için
-   kaç örnek oluşturulacağı.
-*/
+/* =========================================
+   ORTA YAZI
+========================================= */
 
-const MAX_SEGMENT_LENGTH = 28;
+#message {
+    position: absolute;
 
+    left: 50%;
+    top: 50%;
 
-/*
-   Çizim çiçeklerinin boyut aralığı.
-*/
+    transform: translate(-50%, -50%);
 
-const MIN_SIZE = 19;
-const MAX_SIZE = 34;
+    z-index: 5;
 
+    width: max-content;
+    max-width: 90vw;
 
-/*
-   Çizim başladıktan sonra
-   kaç çiçek tutulabileceği.
+    text-align: center;
 
-   Çok büyük tutulursa telefonlarda
-   gereksiz performans tüketebilir.
-*/
+    color: #e34469;
 
-const MAX_FLOWERS = 1200;
+    font-family:
+        Georgia,
+        "Times New Roman",
+        serif;
 
-
-/* =========================================================
-   DURUM
-========================================================= */
-
-let drawing = false;
-
-let lastX = 0;
-let lastY = 0;
-
-let totalFlowers = 0;
-
-
-/*
-   Son yerleştirilen çiçeğin
-   yolu üzerindeki konumu.
-*/
-
-let distanceAccumulator = 0;
-
-
-/*
-   Pointer ID.
-
-   Telefonda başka bir parmakla
-   yanlışlıkla ikinci çizim başlamasını
-   engeller.
-*/
-
-let activePointerId = null;
-
-
-/* =========================================================
-   YARDIMCI
-========================================================= */
-
-
-/*
-   Sayının belirli aralıkta kalmasını sağlar.
-*/
-
-function clamp(value, min, max) {
-
-    return Math.max(
-        min,
-        Math.min(max, value)
+    font-size: clamp(
+        28px,
+        4.5vw,
+        64px
     );
+
+    font-weight: 500;
+
+    line-height: 1.2;
+
+    pointer-events: none;
+
+    transition:
+        opacity .5s ease,
+        transform .5s ease;
 }
 
 
 /*
-   İki nokta arasındaki mesafe.
-*/
+ * Çizim sırasında yazı hafifçe
+ * geri planda kalır.
+ */
 
-function distance(
-    x1,
-    y1,
-    x2,
-    y2
-) {
+#message.drawing {
+    opacity: 0.18;
 
-    return Math.hypot(
-        x2 - x1,
-        y2 - y1
-    );
+    transform:
+        translate(-50%, -50%)
+        scale(0.97);
 }
 
 
-/*
-   İki sayı arasında rastgele değer.
-*/
+/* =========================================
+   TEMİZLE BUTONU
+========================================= */
 
-function random(min, max) {
+#clearButton {
+    position: absolute;
 
-    return (
-        Math.random() *
-        (max - min)
-    ) + min;
+    right: 22px;
+    bottom: 22px;
+
+    z-index: 20;
+
+    border: none;
+
+    padding: 11px 18px;
+
+    border-radius: 999px;
+
+    background: rgba(255,255,255,0.72);
+
+    color: #b83d66;
+
+    font-family:
+        Arial,
+        sans-serif;
+
+    font-size: 14px;
+
+    cursor: pointer;
+
+    box-shadow:
+        0 4px 15px
+        rgba(80,40,90,.12);
+
+    backdrop-filter: blur(8px);
+
+    transition:
+        transform .2s ease,
+        background .2s ease;
+}
+
+#clearButton:hover {
+    background: white;
+
+    transform: translateY(-2px);
+}
+
+#clearButton:active {
+    transform: scale(.95);
 }
 
 
-/* =========================================================
-   ÇİÇEK OLUŞTUR
-========================================================= */
+/* =========================================
+   TELEFON
+========================================= */
 
-function createFlower(
-    x,
-    y,
-    size
-) {
+@media (max-width: 600px) {
 
-    const flower =
-        document.createElement("div");
+    #message {
+        max-width: 86vw;
 
-    flower.className =
-        "flower drawing-flower";
+        font-size: 30px;
+    }
 
+    #clearButton {
+        right: 15px;
+        bottom: 15px;
 
-    /*
-       Konum
-    */
-
-    flower.style.left =
-        `${x}px`;
-
-    flower.style.top =
-        `${y}px`;
-
-
-    /*
-       Boyut
-    */
-
-    flower.style.setProperty(
-        "--flower-size",
-        `${size}px`
-    );
-
-
-    /*
-       Her çiçeğin açısı
-       biraz farklı olsun.
-    */
-
-    flower.style.setProperty(
-        "--rotation",
-        `${random(0, 360)}deg`
-    );
-
-
-    /*
-       Hafif farklı animasyon
-       zamanları.
-    */
-
-    flower.style.setProperty(
-        "--float-delay",
-        `${random(-3, 0)}s`
-    );
-
-
-    /*
-       Yapraklar
-    */
-
-    flower.innerHTML = `
-        <span class="petal p1"></span>
-        <span class="petal p2"></span>
-        <span class="petal p3"></span>
-        <span class="petal p4"></span>
-        <span class="petal p5"></span>
-
-        <span class="center"></span>
-    `;
-
-
-    drawingLayer.appendChild(flower);
-
-
-    totalFlowers++;
-
-
-    /*
-       Çok fazla çiçek oluşursa
-       en eskileri temizle.
-
-       Böylece uzun çizimlerde
-       telefon kasmaz.
-    */
-
-    if (
-        totalFlowers > MAX_FLOWERS
-    ) {
-
-        const oldFlower =
-            drawingLayer.firstElementChild;
-
-        if (oldFlower) {
-
-            oldFlower.remove();
-
-            totalFlowers--;
-        }
+        padding: 10px 15px;
     }
 }
 
 
-/* =========================================================
-   ÇİÇEK YERLEŞTİRME
-========================================================= */
+/* =========================================
+   KÜÇÜK TELEFON
+========================================= */
 
-function placeFlower(
-    x,
-    y
-) {
+@media (max-width: 380px) {
 
-    const size =
-        random(
-            MIN_SIZE,
-            MAX_SIZE
-        );
-
-    createFlower(
-        x,
-        y,
-        size
-    );
+    #message {
+        font-size: 26px;
+    }
 }
-
-
-/* =========================================================
-   ÇİZGİ BOYUNCA ÇİÇEK YERLEŞTİR
-========================================================= */
-
-
-/*
-   Mouse çok hızlı hareket ettiğinde
-   sadece başlangıç ve bitiş noktasına
-   çiçek koyarsak arada boşluk oluşur.
-
-   Bu fonksiyon iki nokta arasını
-   küçük parçalara bölüyor.
-*/
-
-function drawSegment(
-    startX,
-    startY,
-    endX,
-    endY
-) {
-
-    const dx =
-        endX - startX;
-
-    const dy =
-        endY - startY;
-
-    const length =
-        Math.hypot(dx, dy);
-
-
-    if (length === 0) {
-        return;
-    }
-
-
-    /*
-       Birim yön vektörü.
-    */
-
-    const dirX =
-        dx / length;
-
-    const dirY =
-        dy / length;
-
-
-    /*
-       Daha önceki çiçekten kalan
-       mesafeyi hesaba kat.
-    */
-
-    let traveled = 0;
-
-
-    while (
-        traveled + distanceAccumulator
-        >= FLOWER_DISTANCE
-    ) {
-
-        const needed =
-            FLOWER_DISTANCE
-            - distanceAccumulator;
-
-        traveled += needed;
-
-
-        if (traveled > length) {
-            break;
-        }
-
-
-        const x =
-            startX +
-            dirX * traveled;
-
-        const y =
-            startY +
-            dirY * traveled;
-
-
-        placeFlower(
-            x,
-            y
-        );
-
-
-        distanceAccumulator = 0;
-    }
-
-
-    /*
-       Bir sonraki segment için
-       kalan mesafeyi sakla.
-    */
-
-    distanceAccumulator +=
-        length - traveled;
-}
-
-
-/* =========================================================
-   ÇİZİM BAŞLAT
-========================================================= */
-
-function startDrawing(event) {
-
-    /*
-       Eğer zaten başka bir pointer
-       çiziyorsa yeni çizim başlatma.
-    */
-
-    if (
-        activePointerId !== null
-    ) {
-        return;
-    }
-
-
-    activePointerId =
-        event.pointerId;
-
-    drawing = true;
-
-
-    lastX =
-        event.clientX;
-
-    lastY =
-        event.clientY;
-
-
-    distanceAccumulator = 0;
-
-
-    /*
-       Ortadaki yazıyı hafifçe
-       geri plana at.
-    */
-
-    message.classList.add(
-        "drawing"
-    );
-
-
-    /*
-       Fırça çiçeğini göster.
-    */
-
-    brushFlower.classList.add(
-        "active"
-    );
-
-
-    updateBrush(
-        lastX,
-        lastY
-    );
-
-
-    /*
-       İlk çiçeği direkt koy.
-
-       Böylece kullanıcı çizime
-       başladığında boşluk olmaz.
-    */
-
-    placeFlower(
-        lastX,
-        lastY
-    );
-}
-
-
-/* =========================================================
-   ÇİZ
-========================================================= */
-
-function draw(event) {
-
-    if (!drawing) {
-        return;
-    }
-
-
-    if (
-        event.pointerId !==
-        activePointerId
-    ) {
-        return;
-    }
-
-
-    const x =
-        event.clientX;
-
-    const y =
-        event.clientY;
-
-
-    /*
-       Mouse hareketinde veya touch
-       hareketinde aradaki tüm yolu çiz.
-    */
-
-    drawSegment(
-        lastX,
-        lastY,
-        x,
-        y
-    );
-
-
-    lastX = x;
-    lastY = y;
-
-
-    updateBrush(
-        x,
-        y
-    );
-}
-
-
-/* =========================================================
-   FIRÇA ÇİÇEĞİ
-========================================================= */
-
-function updateBrush(
-    x,
-    y
-) {
-
-    brushFlower.style.left =
-        `${x}px`;
-
-    brushFlower.style.top =
-        `${y}px`;
-
-    brushFlower.style.setProperty(
-        "--flower-size",
-        "38px"
-    );
-}
-
-
-/* =========================================================
-   ÇİZİM BİTİR
-========================================================= */
-
-function stopDrawing(event) {
-
-    /*
-       Aktif çizim yoksa bir şey yapma.
-    */
-
-    if (!drawing) {
-        return;
-    }
-
-
-    /*
-       Sadece çizimi başlatan pointer
-       bitirebilir.
-    */
-
-    if (
-        event &&
-        event.pointerId !==
-        activePointerId
-    ) {
-        return;
-    }
-
-
-    drawing = false;
-
-    activePointerId = null;
-
-
-    /*
-       Fırça çiçeğini gizle.
-    */
-
-    brushFlower.classList.remove(
-        "active"
-    );
-
-
-    /*
-       Yazıyı tekrar normal hale getir.
-    */
-
-    message.classList.remove(
-        "drawing"
-    );
-}
-
-
-/* =========================================================
-   POINTER EVENTLERİ
-========================================================= */
-
-
-/*
-   Tek sistem:
-
-   Mouse
-   Touch
-   Stylus
-
-   hepsi çalışır.
-*/
-
-app.addEventListener(
-    "pointerdown",
-    startDrawing,
-    {
-        passive: true
-    }
-);
-
-
-app.addEventListener(
-    "pointermove",
-    draw,
-    {
-        passive: true
-    }
-);
-
-
-app.addEventListener(
-    "pointerup",
-    stopDrawing,
-    {
-        passive: true
-    }
-);
-
-
-app.addEventListener(
-    "pointercancel",
-    stopDrawing,
-    {
-        passive: true
-    }
-);
-
-
-/*
-   Pointer ekranın dışına çıkarsa
-   çizimi bitir.
-*/
-
-app.addEventListener(
-    "pointerleave",
-    (event) => {
-
-        /*
-           Mouse için dışarı çıkıldığında
-           çizim kesilmesin istiyoruz.
-
-           Çünkü kullanıcı pencerenin dışına
-           çıkıp tekrar girebilir.
-
-           Bu yüzden burada stopDrawing
-           çağırmıyoruz.
-        */
-    }
-);
-
-
-/* =========================================================
-   SAĞ TIK / CONTEXT MENU
-========================================================= */
-
-app.addEventListener(
-    "contextmenu",
-    (event) => {
-        event.preventDefault();
-    }
-);
-
-
-/* =========================================================
-   BAŞLANGIÇ
-========================================================= */
-
-brushFlower.style.setProperty(
-    "--flower-size",
-    "38px"
-);
