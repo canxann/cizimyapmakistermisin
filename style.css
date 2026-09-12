@@ -23,6 +23,7 @@ body {
 
 #app {
     position: fixed;
+
     inset: 0;
 
     width: 100%;
@@ -32,28 +33,42 @@ body {
 
     background:
         radial-gradient(
-            circle at 50% 42%,
-            rgba(255,255,255,.18),
-            transparent 55%
+            circle at 50% 40%,
+            rgba(255,255,255,.20),
+            transparent 52%
         ),
-        #aec8f4;
+        linear-gradient(
+            135deg,
+            #aec8f4,
+            #b8cdf1
+        );
 }
 
 
-/* =========================================
-   CANVAS
-========================================= */
+/* =====================================================
+   CANVASLAR
+===================================================== */
 
+#guideCanvas,
 #canvas {
     position: absolute;
+
     inset: 0;
 
     width: 100%;
     height: 100%;
 
     display: block;
+}
 
-    z-index: 1;
+#guideCanvas {
+    z-index: 2;
+
+    pointer-events: none;
+}
+
+#canvas {
+    z-index: 3;
 
     touch-action: none;
 
@@ -61,12 +76,13 @@ body {
 }
 
 
-/* =========================================
-   TUTORIAL
-========================================= */
+/* =====================================================
+   TUTORIAL UI
+===================================================== */
 
-#tutorial {
+#tutorialUI {
     position: absolute;
+
     inset: 0;
 
     z-index: 10;
@@ -82,78 +98,83 @@ body {
     pointer-events: none;
 
     transition:
-        opacity .65s ease,
-        transform .65s cubic-bezier(.22,1,.36,1);
+        opacity .55s ease,
+        transform .65s
+        cubic-bezier(.22,1,.36,1);
 }
 
-#tutorial.finished {
+#tutorialUI.hidden {
     opacity: 0;
 
     transform:
-        scale(1.06);
+        scale(1.05);
 }
 
 
-/* =========================================
-   "HARFİ ÇİZ"
-========================================= */
+/* =====================================================
+   HİNT
+===================================================== */
 
-#tutorialTitle {
-    margin-bottom: 12px;
+#tutorialHint {
+    margin-bottom: 22px;
 
     color:
-        rgba(104,70,104,.68);
+        rgba(77,57,91,.58);
 
     font-family:
-        "Trebuchet MS",
+        Inter,
+        "Segoe UI",
         Arial,
         sans-serif;
 
-    font-size: 14px;
+    font-size: 12px;
 
-    font-weight: 600;
+    font-weight: 700;
 
-    letter-spacing: 2px;
-
-    text-transform: uppercase;
+    letter-spacing: 3px;
 }
 
 
-/* =========================================
-   HEDEF HARF
-========================================= */
+/* =====================================================
+   HARF
+===================================================== */
 
-#targetLetter {
+#letterText {
+    min-width: 180px;
+
+    text-align: center;
+
     color:
-        rgba(227,68,105,.28);
+        rgba(227,68,105,.18);
 
     font-family:
-        "Trebuchet MS",
         "Arial Rounded MT Bold",
+        "Trebuchet MS",
+        "Segoe UI",
         Arial,
         sans-serif;
 
     font-size:
         clamp(
             190px,
-            30vw,
+            31vw,
             360px
         );
 
-    font-weight: 700;
+    font-weight: 800;
 
-    line-height: .9;
+    line-height: .82;
 
-    text-align: center;
+    letter-spacing: -8px;
 
     text-shadow:
-        0 10px 35px
-        rgba(150,70,110,.08);
-
-    transform:
-        scale(.92);
+        0 8px 30px
+        rgba(160,70,110,.08);
 
     opacity: 0;
+
+    transform:
+        scale(.88);
 
     transition:
         opacity .3s ease,
@@ -161,7 +182,7 @@ body {
         cubic-bezier(.22,1,.36,1);
 }
 
-#targetLetter.visible {
+#letterText.show {
     opacity: 1;
 
     transform:
@@ -169,90 +190,104 @@ body {
 }
 
 
-/* =========================================
-   İLERLEME
-========================================= */
+/* =====================================================
+   PROGRESS
+===================================================== */
 
-#tutorialProgress {
-    margin-top: 26px;
+#progressText {
+    margin-top: 25px;
 
     color:
-        rgba(104,70,104,.55);
+        rgba(77,57,91,.48);
 
     font-family:
-        "Trebuchet MS",
+        Inter,
+        "Segoe UI",
         Arial,
         sans-serif;
 
     font-size: 13px;
 
+    font-weight: 600;
+
     letter-spacing: 1px;
 }
 
 
-/* =========================================
-   TAMAMLAMA MESAJI
-========================================= */
+/* =====================================================
+   TAMAMLANDI
+===================================================== */
 
-#message {
+#completeMessage {
     position: absolute;
 
     left: 50%;
     top: 50%;
 
-    z-index: 15;
+    z-index: 20;
 
     width: max-content;
+
     max-width: 90vw;
 
     text-align: center;
 
-    transform:
-        translate(-50%, -50%)
-        scale(.94);
+    pointer-events: none;
 
     opacity: 0;
 
-    pointer-events: none;
+    transform:
+        translate(-50%, -50%)
+        scale(.88);
 
+    transition:
+        opacity .7s ease,
+        transform .7s
+        cubic-bezier(.22,1,.36,1);
+}
+
+#completeMessage.show {
+    opacity: 1;
+
+    transform:
+        translate(-50%, -50%)
+        scale(1);
+}
+
+.completeTitle {
     color: #e34469;
 
     font-family:
-        "Trebuchet MS",
         "Arial Rounded MT Bold",
+        "Trebuchet MS",
+        "Segoe UI",
         Arial,
         sans-serif;
 
     font-size:
         clamp(
-            28px,
+            30px,
             5vw,
-            58px
+            60px
         );
 
-    font-weight: 700;
+    font-weight: 800;
 
-    line-height: 1.25;
+    line-height: 1.1;
 
     text-shadow:
-        0 6px 25px
-        rgba(140,50,90,.12);
-
-    transition:
-        opacity .65s ease,
-        transform .65s
-        cubic-bezier(.22,1,.36,1);
+        0 8px 25px
+        rgba(130,50,90,.12);
 }
 
-#message span {
-    display: block;
-
-    margin-top: 10px;
+.completeSubtitle {
+    margin-top: 13px;
 
     color:
-        rgba(104,70,104,.72);
+        rgba(77,57,91,.68);
 
     font-family:
+        "Segoe UI",
         Arial,
         sans-serif;
 
@@ -264,22 +299,12 @@ body {
         );
 
     font-weight: 500;
-
-    letter-spacing: .4px;
-}
-
-#message.show {
-    opacity: 1;
-
-    transform:
-        translate(-50%, -50%)
-        scale(1);
 }
 
 
-/* =========================================
+/* =====================================================
    TEMİZLE
-========================================= */
+===================================================== */
 
 #clearButton {
     position: absolute;
@@ -289,22 +314,25 @@ body {
 
     z-index: 30;
 
-    border: none;
+    border: 0;
 
-    padding: 11px 18px;
+    padding: 11px 19px;
 
     border-radius: 999px;
 
     background:
-        rgba(255,255,255,.72);
+        rgba(255,255,255,.75);
 
     color: #b83d66;
 
     font-family:
+        "Segoe UI",
         Arial,
         sans-serif;
 
     font-size: 14px;
+
+    font-weight: 600;
 
     cursor: pointer;
 
@@ -312,12 +340,12 @@ body {
 
     pointer-events: none;
 
-    box-shadow:
-        0 5px 18px
-        rgba(80,40,90,.12);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
 
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    box-shadow:
+        0 6px 22px
+        rgba(70,45,90,.13);
 
     transition:
         opacity .5s ease,
@@ -332,7 +360,7 @@ body {
 }
 
 #clearButton:hover {
-    background: #fff;
+    background: white;
 
     transform:
         translateY(-2px);
@@ -344,37 +372,53 @@ body {
 }
 
 
-/* =========================================
+/* =====================================================
    MOBİL
-========================================= */
+===================================================== */
 
 @media (max-width: 600px) {
 
-    #tutorialTitle {
-        font-size: 12px;
+    #tutorialHint {
+        margin-bottom: 16px;
 
-        letter-spacing: 1.5px;
+        font-size: 10px;
+
+        letter-spacing: 2.3px;
     }
 
-    #targetLetter {
+    #letterText {
         font-size:
             clamp(
-                160px,
-                48vw,
+                155px,
+                50vw,
                 280px
             );
+
+        letter-spacing: -5px;
     }
 
-    #tutorialProgress {
-        margin-top: 20px;
+    #progressText {
+        margin-top: 18px;
 
-        font-size: 12px;
+        font-size: 11px;
     }
 
     #clearButton {
         right: 15px;
         bottom: 15px;
 
-        padding: 10px 15px;
+        padding: 10px 16px;
+    }
+}
+
+
+/* =====================================================
+   ÇOK KÜÇÜK TELEFON
+===================================================== */
+
+@media (max-width: 380px) {
+
+    #letterText {
+        font-size: 145px;
     }
 }
