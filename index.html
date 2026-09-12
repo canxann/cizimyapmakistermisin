@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="tr">
-
 <head>
     <meta charset="UTF-8">
 
@@ -19,51 +18,38 @@
 
 <body>
 
-    <div id="app">
+<div id="app">
 
-        <canvas id="canvas"></canvas>
+    <canvas id="canvas"></canvas>
 
+    <!-- Tutorial hedefi -->
+    <div id="tutorial">
 
-        <!-- =====================================
-             TUTORIAL
-        ====================================== -->
-
-        <div id="tutorial">
-
-            <div id="tutorialText"></div>
-
-            <div id="tutorialHint">
-                Hazırlan...
-            </div>
-
+        <div id="tutorialTitle">
+            Harfi çiz
         </div>
 
+        <div id="targetLetter"></div>
 
-        <!-- =====================================
-             ÇİZİM MESAJI
-        ====================================== -->
-
-        <div id="message">
-            Çiçeklerle çizim yapmak ister misin?
-        </div>
-
-
-        <!-- =====================================
-             TEMİZLE
-        ====================================== -->
-
-        <button
-            id="clearButton"
-            type="button"
-        >
-            Temizle
-        </button>
+        <div id="tutorialProgress"></div>
 
     </div>
 
 
-    <script src="./script.js"></script>
+    <!-- Tutorial sonrası mesaj -->
+    <div id="message">
+        Tutorial bitti 🌸<br>
+        <span>Artık istediğini çizebilirsin.</span>
+    </div>
+
+
+    <button id="clearButton">
+        Temizle
+    </button>
+
+</div>
+
+<script src="./script.js"></script>
 
 </body>
-
 </html>
