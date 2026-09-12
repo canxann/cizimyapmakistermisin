@@ -57,7 +57,7 @@ html, body {
     font-weight: 900;
     color: rgba(255, 255, 255, 0.4);
     opacity: 0;
-    transition: opacity 0.4s ease;
+    transition: opacity 0.3s ease;
 }
 
 #targetLetter.visible {
