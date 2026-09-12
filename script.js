@@ -2,100 +2,110 @@ const canvas =
     document.getElementById("canvas");
 
 const ctx =
-    canvas.getContext("2d");
+    canvas.getContext("2d", {
+        alpha: true
+    });
 
+const tutorialUI =
+    document.getElementById("tutorialUI");
 
-const tutorial =
-    document.getElementById("tutorial");
+const letterElement =
+    document.getElementById("letter");
 
-const targetLetter =
-    document.getElementById("targetLetter");
+const progressElement =
+    document.getElementById("progress");
 
-const tutorialProgress =
-    document.getElementById(
-        "tutorialProgress"
-    );
-
-const message =
-    document.getElementById("message");
+const completeMessage =
+    document.getElementById("completeMessage");
 
 const clearButton =
-    document.getElementById(
-        "clearButton"
-    );
+    document.getElementById("clearButton");
 
 
 /* =========================================
    AYARLAR
 ========================================= */
 
-const FLOWER_DISTANCE = 13;
+const TEXT =
+    "VALORANT GIRL PICK ME OLMA";
 
-const MIN_FLOWER_SIZE = 11;
-const MAX_FLOWER_SIZE = 23;
+const FLOWER_DISTANCE = 15;
 
-const MAX_FLOWERS = 1100;
+const MAX_FLOWERS = 850;
 
-const FLOWER_LIFE = 8500;
+const FLOWER_LIFETIME = 7200;
 
-const FADE_TIME = 1300;
+const FLOWER_FADE = 1300;
 
 
 /*
- * Kullanıcının hedef çizgiye
- * yaklaşabileceği tolerans.
+ * Harf algılama toleransı.
+ *
+ * Daha büyük:
+ * Daha kolay.
+ *
+ * Daha küçük:
+ * Daha hassas.
  */
 const LETTER_TOLERANCE = 48;
 
 
 /*
- * Bir harfin tamamlanması için
- * gereken oran.
+ * Hedefin en az ne kadarı
+ * çizilmiş olmalı.
  */
-const REQUIRED_PROGRESS = .82;
+const REQUIRED_COVERAGE = .76;
 
 
 /*
- * Tutorial metni.
+ * Çizimin hedefe ne kadar
+ * yakın olması gerekiyor.
  */
-const TUTORIAL_TEXT =
-    "VALORANT GIRL PICK ME OLMA";
+const REQUIRED_ACCURACY = .55;
+
+
+/*
+ * Kullanıcının çizimi,
+ * hedefin en az bu kadar
+ * uzunluğunda olmalı.
+ */
+const MIN_DRAW_RATIO = .48;
 
 
 /* =========================================
    DURUM
 ========================================= */
 
-let tutorialIndex = 0;
+let tutorial = true;
 
-let tutorialDone = false;
+let letterIndex = 0;
 
-let currentLetter = null;
-
-let letterProgress = 0;
+let activeLetter = null;
 
 let drawing = false;
 
-let activePointer = null;
+let pointerId = null;
+
+let currentStroke = [];
+
+let tutorialStrokes = [];
 
 let lastX = 0;
+
 let lastY = 0;
 
-let distanceSinceFlower = 0;
+let flowerDistance = 0;
 
-const flowers = [];
+let flowers = [];
+
+let dpr = 1;
+
+let audioContext = null;
 
 
 /* =========================================
-   CANVAS
+   CANVAS BOYUTU
 ========================================= */
-
-let dpr =
-    Math.min(
-        window.devicePixelRatio || 1,
-        2
-    );
-
 
 function resizeCanvas() {
 
@@ -128,7 +138,6 @@ function resizeCanvas() {
     canvas.style.width =
         width + "px";
 
-
     canvas.style.height =
         height + "px";
 
@@ -157,28 +166,6 @@ window.addEventListener(
    YARDIMCI
 ========================================= */
 
-function random(min, max) {
-
-    return Math.random() *
-        (max - min) +
-        min;
-}
-
-
-function distance(
-    x1,
-    y1,
-    x2,
-    y2
-) {
-
-    return Math.hypot(
-        x2 - x1,
-        y2 - y1
-    );
-}
-
-
 function clamp(
     value,
     min,
@@ -195,1068 +182,481 @@ function clamp(
 }
 
 
-function easeOutCubic(t) {
-
-    return 1 -
-        Math.pow(
-            1 - t,
-            3
-        );
-}
-
-
-function wait(ms) {
-
-    return new Promise(
-        resolve =>
-            setTimeout(
-                resolve,
-                ms
-            )
-    );
-}
-
-
-/* =========================================
-   SES
-========================================= */
-
-let audioContext = null;
-
-
-function initAudio() {
-
-    if (!audioContext) {
-
-        const AudioContext =
-            window.AudioContext ||
-            window.webkitAudioContext;
-
-
-        if (!AudioContext) {
-            return;
-        }
-
-
-        audioContext =
-            new AudioContext();
-    }
-
-
-    if (
-        audioContext.state ===
-        "suspended"
-    ) {
-
-        audioContext.resume();
-    }
-}
-
-
-function playPop() {
-
-    if (!audioContext) {
-        return;
-    }
-
-
-    const now =
-        audioContext.currentTime;
-
-
-    const oscillator =
-        audioContext.createOscillator();
-
-    const gain =
-        audioContext.createGain();
-
-
-    oscillator.type = "sine";
-
-
-    oscillator.frequency
-        .setValueAtTime(
-            480,
-            now
-        );
-
-
-    oscillator.frequency
-        .exponentialRampToValueAtTime(
-            760,
-            now + .08
-        );
-
-
-    gain.gain
-        .setValueAtTime(
-            .0001,
-            now
-        );
-
-
-    gain.gain
-        .exponentialRampToValueAtTime(
-            .075,
-            now + .015
-        );
-
-
-    gain.gain
-        .exponentialRampToValueAtTime(
-            .0001,
-            now + .13
-        );
-
-
-    oscillator.connect(gain);
-
-    gain.connect(
-        audioContext.destination
-    );
-
-
-    oscillator.start(now);
-
-    oscillator.stop(
-        now + .14
-    );
-}
-
-
-function playSuccess() {
-
-    if (!audioContext) {
-        return;
-    }
-
-
-    const now =
-        audioContext.currentTime;
-
-
-    [0, .09, .18].forEach(
-        (offset, index) => {
-
-            const oscillator =
-                audioContext
-                    .createOscillator();
-
-            const gain =
-                audioContext
-                    .createGain();
-
-
-            oscillator.type =
-                "sine";
-
-
-            oscillator.frequency
-                .setValueAtTime(
-                    [520, 660, 820][index],
-                    now + offset
-                );
-
-
-            gain.gain
-                .setValueAtTime(
-                    .0001,
-                    now + offset
-                );
-
-
-            gain.gain
-                .exponentialRampToValueAtTime(
-                    .07,
-                    now + offset + .02
-                );
-
-
-            gain.gain
-                .exponentialRampToValueAtTime(
-                    .0001,
-                    now + offset + .15
-                );
-
-
-            oscillator.connect(gain);
-
-            gain.connect(
-                audioContext.destination
-            );
-
-
-            oscillator.start(
-                now + offset
-            );
-
-
-            oscillator.stop(
-                now + offset + .16
-            );
-        }
-    );
-}
-
-
-/* =========================================
-   ÇİÇEK
-========================================= */
-
-function addFlower(
-    x,
-    y,
-    size = null
+function lerp(
+    a,
+    b,
+    t
 ) {
 
-    if (
-        flowers.length >=
-        MAX_FLOWERS
-    ) {
-
-        flowers.shift();
-    }
-
-
-    flowers.push({
-
-        x,
-
-        y,
-
-        size:
-            size ??
-            random(
-                MIN_FLOWER_SIZE,
-                MAX_FLOWER_SIZE
-            ),
-
-        rotation:
-            random(
-                0,
-                Math.PI * 2
-            ),
-
-        hue:
-            random(
-                -8,
-                8
-            ),
-
-        alpha:
-            random(
-                .78,
-                1
-            ),
-
-        phase:
-            random(
-                0,
-                Math.PI * 2
-            ),
-
-        createdAt:
-            performance.now()
-    });
+    return a +
+        (b - a) * t;
 }
 
 
-/* =========================================
-   ÇİÇEK PATLAMASI
-========================================= */
-
-function flowerBurst(
-    x,
-    y
+function dist(
+    a,
+    b
 ) {
 
-    addFlower(
-        x,
-        y,
-        38
+    return Math.hypot(
+        b.x - a.x,
+        b.y - a.y
     );
-
-
-    const count = 20;
-
-
-    for (
-        let i = 0;
-        i < count;
-        i++
-    ) {
-
-        const angle =
-            (
-                Math.PI * 2 /
-                count
-            ) * i;
-
-
-        const radius =
-            random(
-                35,
-                100
-            );
-
-
-        addFlower(
-            x +
-            Math.cos(angle) *
-            radius,
-
-            y +
-            Math.sin(angle) *
-            radius,
-
-            random(
-                11,
-                27
-            )
-        );
-    }
-
-
-    for (
-        let i = 0;
-        i < 9;
-        i++
-    ) {
-
-        const angle =
-            random(
-                0,
-                Math.PI * 2
-            );
-
-
-        const radius =
-            random(
-                100,
-                145
-            );
-
-
-        addFlower(
-            x +
-            Math.cos(angle) *
-            radius,
-
-            y +
-            Math.sin(angle) *
-            radius,
-
-            random(
-                7,
-                14
-            )
-        );
-    }
 }
 
 
-/* =========================================
-   ÇİÇEK ÇİZ
-========================================= */
-
-function drawFlower(
-    flower,
-    time
+function random(
+    min,
+    max
 ) {
 
-    const age =
-        time -
-        flower.createdAt;
-
-
-    if (
-        age >=
-        FLOWER_LIFE
-    ) {
-
-        return;
-    }
-
-
-    const birth =
-        easeOutCubic(
-            Math.min(
-                age / 220,
-                1
-            )
-        );
-
-
-    let alpha = 1;
-
-
-    if (
-        age >
-        FLOWER_LIFE -
-        FADE_TIME
-    ) {
-
-        alpha =
-            1 -
-            (
-                age -
-                (
-                    FLOWER_LIFE -
-                    FADE_TIME
-                )
-            ) /
-            FADE_TIME;
-    }
-
-
-    const pulse =
-        1 +
-        Math.sin(
-            time * .0015 +
-            flower.phase
-        ) * .025;
-
-
-    const scale =
-        birth *
-        pulse;
-
-
-    const size =
-        flower.size;
-
-
-    ctx.save();
-
-
-    ctx.translate(
-        flower.x,
-        flower.y
-    );
-
-
-    ctx.rotate(
-        flower.rotation
-    );
-
-
-    ctx.scale(
-        scale,
-        scale
-    );
-
-
-    ctx.globalAlpha =
-        flower.alpha *
-        alpha;
-
-
-    ctx.shadowColor =
-        "rgba(100,40,90,.18)";
-
-
-    ctx.shadowBlur = 5;
-
-    ctx.shadowOffsetY = 2;
-
-
-    const petals = 5;
-
-
-    for (
-        let i = 0;
-        i < petals;
-        i++
-    ) {
-
-        ctx.save();
-
-
-        ctx.rotate(
-            i *
-            Math.PI * 2 /
-            petals
-        );
-
-
-        const hue =
-            328 +
-            flower.hue;
-
-
-        const gradient =
-            ctx.createLinearGradient(
-                0,
-                -size * .1,
-                0,
-                -size
-            );
-
-
-        gradient.addColorStop(
-            0,
-            `hsl(${hue},66%,78%)`
-        );
-
-
-        gradient.addColorStop(
-            .5,
-            `hsl(${hue - 2},63%,72%)`
-        );
-
-
-        gradient.addColorStop(
-            1,
-            `hsl(${hue + 4},60%,88%)`
-        );
-
-
-        ctx.fillStyle =
-            gradient;
-
-
-        ctx.beginPath();
-
-
-        ctx.moveTo(
-            0,
-            -size * .12
-        );
-
-
-        ctx.bezierCurveTo(
-            -size * .45,
-            -size * .42,
-
-            -size * .48,
-            -size * .88,
-
-            0,
-            -size
-        );
-
-
-        ctx.bezierCurveTo(
-            size * .48,
-            -size * .88,
-
-            size * .45,
-            -size * .42,
-
-            0,
-            -size * .12
-        );
-
-
-        ctx.fill();
-
-
-        ctx.restore();
-    }
-
-
-    ctx.shadowBlur = 3;
-
-
-    const center =
-        ctx.createRadialGradient(
-            0,
-            0,
-            1,
-            0,
-            0,
-            size * .27
-        );
-
-
-    center.addColorStop(
-        0,
-        "#fff0bb"
-    );
-
-
-    center.addColorStop(
-        .55,
-        "#f4a16e"
-    );
-
-
-    center.addColorStop(
-        1,
-        "#d95f83"
-    );
-
-
-    ctx.fillStyle =
-        center;
-
-
-    ctx.beginPath();
-
-
-    ctx.arc(
-        0,
-        0,
-        size * .23,
-        0,
-        Math.PI * 2
-    );
-
-
-    ctx.fill();
-
-
-    ctx.restore();
+    return Math.random() *
+        (max - min) +
+        min;
 }
 
 
 /* =========================================
-   RENDER
-========================================= */
-
-function render(time) {
-
-    ctx.clearRect(
-        0,
-        0,
-        window.innerWidth,
-        window.innerHeight
-    );
-
-
-    for (
-        let i =
-            flowers.length - 1;
-
-        i >= 0;
-
-        i--
-    ) {
-
-        const flower =
-            flowers[i];
-
-
-        if (
-            time -
-            flower.createdAt
-            >=
-            FLOWER_LIFE
-        ) {
-
-            flowers.splice(
-                i,
-                1
-            );
-
-            continue;
-        }
-
-
-        drawFlower(
-            flower,
-            time
-        );
-    }
-
-
-    requestAnimationFrame(
-        render
-    );
-}
-
-
-requestAnimationFrame(
-    render
-);
-
-
-/* =========================================
-   HARF HEDEFLERİ
+   HARF GEOMETRİLERİ
 ========================================= */
 
 /*
- * Her harf normalize edilmiş
- * koordinatlardan oluşuyor.
+ * Koordinatlar -1 / +1 arasındadır.
  *
- * x: -1 ile +1
- * y: -1 ile +1
- *
- * Böylece ekran boyutundan
- * bağımsız çalışıyor.
+ * Bunlar ekrandaki fonttan bağımsız
+ * gerçek çizim yollarıdır.
  */
 
 const LETTERS = {
 
     V: [
         [
-            [-.55, -.65],
-            [0, .65],
-            [.55, -.65]
+            [-.58, -.62],
+            [0, .62],
+            [.58, -.62]
         ]
     ],
-
 
     A: [
         [
-            [-.55, .65],
-            [0, -.65],
-            [.55, .65]
+            [-.56, .62],
+            [0, -.64],
+            [.56, .62]
         ],
         [
-            [-.32, .05],
-            [.32, .05]
+            [-.31, .02],
+            [.31, .02]
         ]
     ],
-
 
     L: [
         [
-            [-.45, -.65],
-            [-.45, .65],
-            [.55, .65]
+            [-.45, -.64],
+            [-.45, .64],
+            [.56, .64]
         ]
     ],
-
 
     O: [
         [
-            [0, -.65],
-            [.42, -.52],
+            [0, -.66],
+            [.40, -.56],
             [.58, 0],
-            [.42, .52],
-            [0, .65],
-            [-.42, .52],
+            [.40, .56],
+            [0, .66],
+            [-.40, .56],
             [-.58, 0],
-            [-.42, -.52],
-            [0, -.65]
+            [-.40, -.56],
+            [0, -.66]
         ]
     ],
-
 
     R: [
         [
-            [-.45, .65],
-            [-.45, -.65],
-            [.15, -.65],
-            [.48, -.48],
-            [.15, 0],
-            [-.45, 0]
+            [-.46, .64],
+            [-.46, -.64],
+            [.16, -.64],
+            [.50, -.44],
+            [.16, -.02],
+            [-.46, -.02]
         ],
         [
-            [.12, 0],
-            [.55, .65]
+            [.14, -.02],
+            [.55, .64]
         ]
     ],
-
 
     N: [
         [
-            [-.5, .65],
-            [-.5, -.65],
-            [.5, .65],
-            [.5, -.65]
+            [-.50, .64],
+            [-.50, -.64],
+            [.50, .64],
+            [.50, -.64]
         ]
     ],
-
 
     T: [
         [
-            [-.58, -.65],
-            [.58, -.65]
+            [-.60, -.64],
+            [.60, -.64]
         ],
         [
-            [0, -.65],
-            [0, .65]
+            [0, -.64],
+            [0, .64]
         ]
     ],
-
 
     G: [
         [
-            [.5, -.45],
-            [.25, -.65],
-            [-.25, -.65],
+            [.52, -.43],
+            [.27, -.64],
+            [-.25, -.64],
             [-.55, -.35],
             [-.55, .35],
-            [-.25, .65],
-            [.3, .65],
-            [.5, .38],
-            [.5, .05],
-            [.05, .05]
+            [-.25, .64],
+            [.28, .64],
+            [.52, .40],
+            [.52, .06],
+            [.06, .06]
         ]
     ],
-
-
-    P: [
-        [
-            [-.45, .65],
-            [-.45, -.65],
-            [.2, -.65],
-            [.5, -.45],
-            [.2, -.05],
-            [-.45, -.05]
-        ]
-    ],
-
 
     I: [
         [
-            [-.35, -.65],
-            [.35, -.65]
+            [-.34, -.64],
+            [.34, -.64]
         ],
         [
-            [0, -.65],
-            [0, .65]
+            [0, -.64],
+            [0, .64]
         ],
         [
-            [-.35, .65],
-            [.35, .65]
+            [-.34, .64],
+            [.34, .64]
         ]
     ],
 
+    P: [
+        [
+            [-.46, .64],
+            [-.46, -.64],
+            [.17, -.64],
+            [.48, -.44],
+            [.17, -.04],
+            [-.46, -.04]
+        ]
+    ],
 
     C: [
         [
             [.52, -.48],
-            [.2, -.65],
-            [-.3, -.65],
-            [-.55, -.35],
-            [-.55, .35],
-            [-.3, .65],
-            [.2, .65],
+            [.20, -.64],
+            [-.28, -.64],
+            [-.55, -.34],
+            [-.55, .34],
+            [-.28, .64],
+            [.20, .64],
             [.52, .48]
         ]
     ],
 
-
     K: [
         [
-            [-.45, -.65],
-            [-.45, .65]
+            [-.46, -.64],
+            [-.46, .64]
         ],
         [
-            [.5, -.65],
-            [-.45, 0],
-            [.55, .65]
+            [.50, -.64],
+            [-.46, 0],
+            [.54, .64]
         ]
     ],
-
 
     E: [
         [
-            [.5, -.65],
-            [-.5, -.65],
-            [-.5, .65],
-            [.5, .65]
+            [.50, -.64],
+            [-.50, -.64],
+            [-.50, .64],
+            [.50, .64]
         ],
         [
-            [-.5, 0],
-            [.3, 0]
+            [-.50, 0],
+            [.28, 0]
         ]
     ],
 
-
     M: [
         [
-            [-.58, .65],
-            [-.58, -.65],
-            [0, .05],
-            [.58, -.65],
-            [.58, .65]
+            [-.58, .64],
+            [-.58, -.64],
+            [0, .08],
+            [.58, -.64],
+            [.58, .64]
         ]
     ]
 };
 
 
 /* =========================================
-   AKTİF HARFİN EKRAN KOORDİNATLARI
+   HARF TRANSFORM
 ========================================= */
 
 function getLetterTransform() {
 
     const width =
         Math.min(
-            window.innerWidth * .62,
-            390
-        );
-
-
-    const height =
-        Math.min(
-            window.innerHeight * .46,
+            window.innerWidth * .52,
             330
         );
 
-
-    const cx =
-        window.innerWidth / 2;
-
-
-    const cy =
-        window.innerHeight / 2;
+    const height =
+        Math.min(
+            window.innerHeight * .38,
+            270
+        );
 
 
     return {
-        cx,
-        cy,
+        x:
+            window.innerWidth / 2,
+
+        y:
+            window.innerHeight / 2,
+
         width,
+
         height
     };
 }
 
 
-function normalizedToScreen(
-    point
-) {
+function toScreen(point) {
 
-    const {
-        cx,
-        cy,
-        width,
-        height
-    } =
+    const t =
         getLetterTransform();
 
 
     return {
         x:
-            cx +
+            t.x +
             point[0] *
-            width,
+            t.width,
 
         y:
-            cy +
+            t.y +
             point[1] *
-            height
+            t.height
     };
 }
 
 
 /* =========================================
-   HARFİ HAZIRLA
+   TARGET SAMPLE
 ========================================= */
 
-function loadLetter() {
+function sampleTarget() {
 
-    if (
-        tutorialIndex >=
-        TUTORIAL_TEXT.length
-    ) {
-
-        finishTutorial();
-
-        return;
+    if (!activeLetter) {
+        return [];
     }
 
 
-    const character =
-        TUTORIAL_TEXT[
-            tutorialIndex
-        ];
+    const points = [];
 
 
-    /*
-     * Boşlukları kullanıcıya
-     * çizdirmiyoruz.
-     */
-    if (
-        character === " "
+    for (
+        const stroke
+        of activeLetter
     ) {
 
-        tutorialIndex++;
+        for (
+            let i = 0;
+            i < stroke.length - 1;
+            i++
+        ) {
 
-        loadLetter();
+            const a =
+                toScreen(
+                    stroke[i]
+                );
 
-        return;
-    }
-
-
-    currentLetter =
-        LETTERS[character];
-
-
-    letterProgress = 0;
-
-
-    targetLetter.textContent =
-        character;
+            const b =
+                toScreen(
+                    stroke[i + 1]
+                );
 
 
-    targetLetter.classList.remove(
-        "visible"
-    );
+            const length =
+                Math.hypot(
+                    b.x - a.x,
+                    b.y - a.y
+                );
 
 
-    tutorialProgress.textContent =
-        `${tutorialIndex + 1} / ${countLetters()}`;
+            const steps =
+                Math.max(
+                    4,
+                    Math.ceil(
+                        length / 8
+                    )
+                );
 
 
-    requestAnimationFrame(
-        () => {
+            for (
+                let j = 0;
+                j < steps;
+                j++
+            ) {
 
-            targetLetter.classList.add(
-                "visible"
-            );
+                const p =
+                    j / steps;
+
+
+                points.push({
+                    x:
+                        lerp(
+                            a.x,
+                            b.x,
+                            p
+                        ),
+
+                    y:
+                        lerp(
+                            a.y,
+                            b.y,
+                            p
+                        )
+                });
+            }
         }
-    );
+    }
+
+
+    return points;
 }
 
 
 /* =========================================
-   HARF SAYISI
+   HEDEF UZUNLUĞU
 ========================================= */
 
-function countLetters() {
+function getTargetLength() {
 
-    return TUTORIAL_TEXT
-        .replaceAll(" ", "")
-        .length;
+    if (!activeLetter) {
+        return 0;
+    }
+
+
+    let total = 0;
+
+
+    for (
+        const stroke
+        of activeLetter
+    ) {
+
+        for (
+            let i = 0;
+            i < stroke.length - 1;
+            i++
+        ) {
+
+            const a =
+                toScreen(
+                    stroke[i]
+                );
+
+            const b =
+                toScreen(
+                    stroke[i + 1]
+                );
+
+
+            total +=
+                Math.hypot(
+                    b.x - a.x,
+                    b.y - a.y
+                );
+        }
+    }
+
+
+    return total;
 }
 
 
 /* =========================================
-   NOKTANIN HARFE UZAKLIĞI
+   USER ÇİZİM UZUNLUĞU
 ========================================= */
 
-function pointToSegmentDistance(
-    px,
-    py,
-    ax,
-    ay,
-    bx,
-    by
+function getUserLength() {
+
+    let total = 0;
+
+
+    for (
+        const stroke
+        of tutorialStrokes
+    ) {
+
+        for (
+            let i = 1;
+            i < stroke.length;
+            i++
+        ) {
+
+            total +=
+                dist(
+                    stroke[i - 1],
+                    stroke[i]
+                );
+        }
+    }
+
+
+    return total;
+}
+
+
+/* =========================================
+   EN YAKIN MESAFE
+========================================= */
+
+function pointSegmentDistance(
+    p,
+    a,
+    b
 ) {
 
     const abx =
-        bx - ax;
+        b.x - a.x;
 
     const aby =
-        by - ay;
+        b.y - a.y;
 
 
-    const abLength =
+    const length =
         abx * abx +
         aby * aby;
 
 
     if (
-        abLength === 0
+        length === 0
     ) {
 
         return Math.hypot(
-            px - ax,
-            py - ay
+            p.x - a.x,
+            p.y - a.y
         );
     }
 
 
     let t =
         (
-            (px - ax) * abx +
-            (py - ay) * aby
+            (p.x - a.x) * abx +
+            (p.y - a.y) * aby
         ) /
-        abLength;
+        length;
 
 
     t =
@@ -1268,790 +668,154 @@ function pointToSegmentDistance(
 
 
     const x =
-        ax +
+        a.x +
         abx * t;
 
 
     const y =
-        ay +
+        a.y +
         aby * t;
 
 
     return Math.hypot(
-        px - x,
-        py - y
+        p.x - x,
+        p.y - y
     );
 }
 
 
-/* =========================================
-   HARF ÜZERİNDE Mİ?
-========================================= */
-
-function getNearestLetterPoint(
-    x,
-    y
+function pointToUserDistance(
+    targetPoint
 ) {
 
-    if (!currentLetter) {
-        return null;
-    }
-
-
-    let closest = null;
+    let minimum =
+        Infinity;
 
 
     for (
-        let strokeIndex = 0;
-        strokeIndex <
-        currentLetter.length;
-        strokeIndex++
+        const stroke
+        of tutorialStrokes
     ) {
 
-        const stroke =
-            currentLetter[
-                strokeIndex
-            ];
-
-
         for (
-            let i = 0;
-            i <
-            stroke.length - 1;
+            let i = 1;
+            i < stroke.length;
             i++
         ) {
 
-            const a =
-                normalizedToScreen(
+            const d =
+                pointSegmentDistance(
+                    targetPoint,
+                    stroke[i - 1],
                     stroke[i]
                 );
 
 
-            const b =
-                normalizedToScreen(
-                    stroke[i + 1]
-                );
-
-
-            const d =
-                pointToSegmentDistance(
-                    x,
-                    y,
-                    a.x,
-                    a.y,
-                    b.x,
-                    b.y
-                );
-
-
             if (
-                !closest ||
-                d < closest.distance
+                d < minimum
             ) {
 
-                closest = {
-                    distance: d,
-                    strokeIndex,
-                    segmentIndex: i
-                };
+                minimum = d;
             }
         }
     }
 
 
-    return closest;
+    return minimum;
 }
 
 
 /* =========================================
-   HARF İLERLEMESİ
+   HARFİ DEĞERLENDİR
 ========================================= */
 
-function updateLetterProgress(
-    x,
-    y
-) {
+function evaluateLetter() {
 
-    const nearest =
-        getNearestLetterPoint(
-            x,
-            y
-        );
-
-
-    if (!nearest) {
-        return;
-    }
-
-
-    /*
-     * Kullanıcı hedef çizgiye
-     * yeterince yakınsa ilerle.
-     */
-    if (
-        nearest.distance >
-        LETTER_TOLERANCE
-    ) {
-
-        return;
-    }
-
-
-    /*
-     * Harfin bütün parçalarının
-     * toplam uzunluğunu hesapla.
-     */
-    const total =
-        getLetterTotalLength();
-
-
-    /*
-     * Kullanıcının bulunduğu
-     * segmentten tahmini ilerleme.
-     */
-    let passed = 0;
-
-
-    for (
-        let s = 0;
-        s < nearest.strokeIndex;
-        s++
-    ) {
-
-        passed +=
-            getStrokeLength(
-                currentLetter[s]
-            );
-    }
-
-
-    const stroke =
-        currentLetter[
-            nearest.strokeIndex
-        ];
-
-
-    for (
-        let i = 0;
-        i < nearest.segmentIndex;
-        i++
-    ) {
-
-        const a =
-            normalizedToScreen(
-                stroke[i]
-            );
-
-
-        const b =
-            normalizedToScreen(
-                stroke[i + 1]
-            );
-
-
-        passed +=
-            distance(
-                a.x,
-                a.y,
-                b.x,
-                b.y
-            );
-    }
-
-
-    /*
-     * Bulunduğumuz segmente
-     * yakınlık da ilerlemeye ekleniyor.
-     */
-    const a =
-        normalizedToScreen(
-            stroke[
-                nearest.segmentIndex
-            ]
-        );
-
-
-    const b =
-        normalizedToScreen(
-            stroke[
-                nearest.segmentIndex + 1
-            ]
-        );
-
-
-    const segmentLength =
-        distance(
-            a.x,
-            a.y,
-            b.x,
-            b.y
-        );
-
-
-    const segmentProgress =
-        1 -
-        clamp(
-            nearest.distance /
-            Math.max(
-                segmentLength,
-                1
-            ),
-            0,
-            1
-        );
-
-
-    passed +=
-        segmentLength *
-        segmentProgress;
-
-
-    const progress =
-        clamp(
-            passed / total,
-            0,
-            1
-        );
-
-
-    /*
-     * Sadece ileri doğru ilerle.
-     */
-    letterProgress =
-        Math.max(
-            letterProgress,
-            progress
-        );
+    const target =
+        sampleTarget();
 
 
     if (
-        letterProgress >=
-        REQUIRED_PROGRESS
+        target.length === 0
     ) {
 
-        completeLetter();
-    }
-}
-
-
-/* =========================================
-   STROKE UZUNLUĞU
-========================================= */
-
-function getStrokeLength(
-    stroke
-) {
-
-    let total = 0;
-
-
-    for (
-        let i = 0;
-        i < stroke.length - 1;
-        i++
-    ) {
-
-        const a =
-            normalizedToScreen(
-                stroke[i]
-            );
-
-
-        const b =
-            normalizedToScreen(
-                stroke[i + 1]
-            );
-
-
-        total +=
-            distance(
-                a.x,
-                a.y,
-                b.x,
-                b.y
-            );
+        return false;
     }
 
 
-    return total;
-}
+    const userLength =
+        getUserLength();
 
-
-function getLetterTotalLength() {
-
-    let total = 0;
-
-
-    for (
-        const stroke
-        of currentLetter
-    ) {
-
-        total +=
-            getStrokeLength(
-                stroke
-            );
-    }
-
-
-    return total;
-}
-
-
-/* =========================================
-   HARF TAMAMLANDI
-========================================= */
-
-async function completeLetter() {
-
-    if (!currentLetter) {
-        return;
-    }
+    const targetLength =
+        getTargetLength();
 
 
     /*
-     * Aynı harfin iki kere
-     * tamamlanmasını engelle.
+     * Çok kısa çizimi direkt reddet.
      */
-    const completedLetter =
-        TUTORIAL_TEXT[
-            tutorialIndex
-        ];
-
-
-    currentLetter = null;
-
-
-    /*
-     * Harfin ortasına patlama.
-     */
-    const {
-        cx,
-        cy
-    } =
-        getLetterTransform();
-
-
-    flowerBurst(
-        cx,
-        cy
-    );
-
-
-    playPop();
-
-
-    /*
-     * Hedef harfi kısa süre
-     * parlat.
-     */
-    targetLetter.classList.remove(
-        "visible"
-    );
-
-
-    await wait(230);
-
-
-    tutorialIndex++;
-
-
-    loadLetter();
-}
-
-
-/* =========================================
-   TUTORIAL BİTİŞİ
-========================================= */
-
-async function finishTutorial() {
-
-    tutorialDone = true;
-
-
-    targetLetter.classList.remove(
-        "visible"
-    );
-
-
-    tutorialProgress.textContent =
-        "";
-
-
-    await wait(350);
-
-
-    flowerBurst(
-        window.innerWidth / 2,
-        window.innerHeight / 2
-    );
-
-
-    playSuccess();
-
-
-    await wait(700);
-
-
-    tutorial.classList.add(
-        "finished"
-    );
-
-
-    await wait(600);
-
-
-    message.classList.add(
-        "show"
-    );
-
-
-    clearButton.classList.add(
-        "show"
-    );
-}
-
-
-/* =========================================
-   ÇİZGİ
-========================================= */
-
-function drawLine(
-    x1,
-    y1,
-    x2,
-    y2
-) {
-
-    const dx =
-        x2 - x1;
-
-
-    const dy =
-        y2 - y1;
-
-
-    const length =
-        Math.hypot(
-            dx,
-            dy
-        );
-
-
     if (
-        length === 0
+        userLength <
+        targetLength *
+        MIN_DRAW_RATIO
     ) {
 
-        return;
+        return false;
     }
 
 
-    const steps =
-        Math.ceil(
-            length / 3
-        );
+    /*
+     * Hedef noktalarının kaç tanesine
+     * kullanıcı yeterince yaklaşmış?
+     */
+    let covered = 0;
+
+
+    let totalDistance = 0;
 
 
     for (
-        let i = 1;
-        i <= steps;
-        i++
+        const point
+        of target
     ) {
 
-        const t =
-            i / steps;
-
-
-        const x =
-            x1 +
-            dx * t;
-
-
-        const y =
-            y1 +
-            dy * t;
-
-
-        const segment =
-            distance(
-                lastX,
-                lastY,
-                x,
-                y
+        const d =
+            pointToUserDistance(
+                point
             );
 
 
-        distanceSinceFlower +=
-            segment;
-
-
-        while (
-            distanceSinceFlower >=
-            FLOWER_DISTANCE
-        ) {
-
-            const ratio =
-                FLOWER_DISTANCE /
-                distanceSinceFlower;
-
-
-            const flowerX =
-                lastX +
-                (
-                    x -
-                    lastX
-                ) *
-                ratio;
-
-
-            const flowerY =
-                lastY +
-                (
-                    y -
-                    lastY
-                ) *
-                ratio;
-
-
-            addFlower(
-                flowerX,
-                flowerY
+        totalDistance +=
+            Math.min(
+                d,
+                LETTER_TOLERANCE * 2
             );
 
 
-            distanceSinceFlower =
-                distanceSinceFlower -
-                FLOWER_DISTANCE;
-
-
-            lastX =
-                flowerX;
-
-
-            lastY =
-                flowerY;
-        }
-
-
-        lastX = x;
-
-        lastY = y;
-
-
-        /*
-         * Tutorial açıksa
-         * harf kontrolü.
-         */
         if (
-            !tutorialDone
+            d <=
+            LETTER_TOLERANCE
         ) {
 
-            updateLetterProgress(
-                x,
-                y
-            );
+            covered++;
         }
     }
-}
 
 
-/* =========================================
-   ÇİZİME BAŞLA
-========================================= */
+    const coverage =
+        covered /
+        target.length;
 
-function startDrawing(event) {
 
-    /*
-     * Tutorial bitmeden
-     * normal çizim yok.
-     */
-    if (
-        tutorialDone === false &&
-        currentLetter === null
-    ) {
-
-        return;
-    }
+    const averageDistance =
+        totalDistance /
+        target.length;
 
 
     /*
-     * Ses için kullanıcı etkileşimi.
+     * Accuracy 0 - 1.
      */
-    initAudio();
-
-
-    if (
-        activePointer !== null
-    ) {
-
-        return;
-    }
-
-
-    activePointer =
-        event.pointerId;
-
-
-    drawing = true;
-
-
-    lastX =
-        event.clientX;
-
-
-    lastY =
-        event.clientY;
-
-
-    distanceSinceFlower = 0;
-
-
-    /*
-     * Tutorial harfi çiziliyorsa
-     * normal çiçekleri de üret.
-     */
-    addFlower(
-        lastX,
-        lastY,
-        tutorialDone
-            ? null
-            : 7
-    );
-
-
-    try {
-
-        canvas.setPointerCapture(
-            event.pointerId
-        );
-
-    } catch (error) {}
-}
-
-
-/* =========================================
-   HAREKET
-========================================= */
-
-function moveDrawing(event) {
-
-    if (
-        !drawing
-    ) {
-
-        return;
-    }
-
-
-    if (
-        event.pointerId !==
-        activePointer
-    ) {
-
-        return;
-    }
-
-
-    drawLine(
-        lastX,
-        lastY,
-        event.clientX,
-        event.clientY
-    );
-}
-
-
-/* =========================================
-   ÇİZİMİ BİTİR
-========================================= */
-
-function stopDrawing(event) {
-
-    if (
-        !drawing
-    ) {
-
-        return;
-    }
-
-
-    if (
-        event &&
-        event.pointerId !==
-        activePointer
-    ) {
-
-        return;
-    }
-
-
-    drawing = false;
-
-    activePointer = null;
-
-
-    try {
-
-        if (event) {
-
-            canvas.releasePointerCapture(
-                event.pointerId
-            );
-        }
-
-    } catch (error) {}
-}
-
-
-/* =========================================
-   POINTER EVENTLERİ
-========================================= */
-
-canvas.addEventListener(
-    "pointerdown",
-    startDrawing
-);
-
-
-canvas.addEventListener(
-    "pointermove",
-    moveDrawing
-);
-
-
-canvas.addEventListener(
-    "pointerup",
-    stopDrawing
-);
-
-
-canvas.addEventListener(
-    "pointercancel",
-    stopDrawing
-);
-
-
-/* =========================================
-   TEMİZLE
-========================================= */
-
-clearButton.addEventListener(
-    "click",
-    () => {
-
-        flowers.length = 0;
-
-        distanceSinceFlower = 0;
-
-        drawing = false;
-
-        activePointer = null;
-    }
-);
-
-
-/* =========================================
-   BAŞLAT
-========================================= */
-
-loadLetter();
+    const accuracy =
+        clamp(
+            1 -
+            averageDistance /
+            (LETTER_TOLERANCE *
