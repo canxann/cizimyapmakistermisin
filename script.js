@@ -9,20 +9,21 @@ const msgTitle = document.getElementById("msgTitle");
 const msgSub = document.getElementById("msgSub");
 const clearButton = document.getElementById("clearButton");
 
-// Boşluklar dahil eksiksiz tam cümle
 const FULL_SENTENCE = "VALORANT GIRL PICK ME OLMA";
-const CHARS_LIST = FULL_SENTENCE.replace(/\s+/g, "").split(""); // 21 harf
+const CHARS_LIST = FULL_SENTENCE.replace(/\s+/g, "").split("");
 
 let flowers = [];
 let tutorialMode = true;
 let currentIndex = 0;
 let drawing = false;
 let activePointer = null;
-let distanceSinceFlower = 0;
-let currentLetterFlowerCount = 0;
+let lastX = 0;
+let lastY = 0;
+let drawnDistance = 0;
+let isTransitioning = false;
 
-const FLOWER_DISTANCE = 10;
-const REQUIRED_FLOWERS = 18; // Her harf için gereken çiçek sayısı (kolayca doldurulur ama atlanmaz)
+const REQUIRED_DISTANCE = 350; // Harfi geçmek için ekranda çizilmesi gereken toplam mesafe (piksel)
+const FLOWER_SPACING = 25;     // Çiçeklerin arasındaki mesafe
 
 function resizeCanvas() {
     canvas.width = window.innerWidth;
@@ -85,7 +86,7 @@ function showCurrentLetter() {
 
         setTimeout(() => {
             message.classList.remove("show");
-            flowers = []; // Otomatik pürüzsüz temizlik
+            flowers = [];
             clearButton.classList.add("show");
         }, 2000);
 
@@ -93,8 +94,9 @@ function showCurrentLetter() {
     }
 
     const char = CHARS_LIST[currentIndex];
-    flowers = []; // Her yeni harfte eski çiçekler tamamen silinir
-    currentLetterFlowerCount = 0;
+    flowers = []; 
+    drawnDistance = 0;
+    isTransitioning = false;
 
     targetLetter.textContent = char;
     tutorialHint.textContent = `"${char}" harfinin içini çiçeklerle doldur`;
@@ -103,29 +105,26 @@ function showCurrentLetter() {
 }
 
 function addFlower(x, y) {
-    if (flowers.length > 3000) flowers.shift();
+    if (isTransitioning) return;
+
+    // Serbest modda ve tutorialda max çiçek sınırı (eski çiçekler arkadan yumuşakça silinir)
+    const limit = tutorialMode ? 100 : 150;
+    if (flowers.length > limit) {
+        flowers.shift();
+    }
+
     flowers.push({
-        x: x + (Math.random() - 0.5) * 10,
-        y: y + (Math.random() - 0.5) * 10,
+        x: x + (Math.random() - 0.5) * 8,
+        y: y + (Math.random() - 0.5) * 8,
         vx: 0,
         vy: 0,
         size: 12 + Math.random() * 10,
         rotation: Math.random() * Math.PI * 2,
         hue: -12 + Math.random() * 24,
         born: performance.now(),
-        life: tutorialMode ? 15000 : 25000,
+        life: tutorialMode ? 25000 : 7000, // Serbest modda eski çiçekler 7 saniyede pürüzsüzce silinir
         isBurst: false
     });
-
-    if (tutorialMode) {
-        currentLetterFlowerCount++;
-        // Yeterli çiçek çizildiğinde sonraki harfe geç
-        if (currentLetterFlowerCount >= REQUIRED_FLOWERS) {
-            targetLetter.classList.remove("visible");
-            currentIndex++;
-            setTimeout(showCurrentLetter, 250);
-        }
-    }
 }
 
 function drawFlower(flower, now) {
@@ -147,7 +146,7 @@ function drawFlower(flower, now) {
     ctx.save();
     ctx.translate(flower.x, flower.y);
     ctx.rotate(flower.rotation);
-    ctx.globalAlpha = alpha;
+    ctx.globalAlpha = Math.max(0, alpha);
 
     const petalCount = 5;
     for (let i = 0; i < petalCount; i++) {
@@ -181,22 +180,32 @@ requestAnimationFrame(render);
 canvas.addEventListener("pointerdown", (e) => {
     activePointer = e.pointerId;
     drawing = true;
-    distanceSinceFlower = 0;
-    addFlower(e.clientX, e.clientY);
+    lastX = e.clientX;
+    lastY = e.clientY;
+    addFlower(lastX, lastY);
 });
 
 canvas.addEventListener("pointermove", (e) => {
-    if (!drawing || e.pointerId !== activePointer) return;
-    
-    const lastFlower = flowers[flowers.length - 1];
-    if (lastFlower && !lastFlower.isBurst) {
-        distanceSinceFlower += Math.hypot(e.clientX - lastFlower.x, e.clientY - lastFlower.y);
-        if (distanceSinceFlower >= FLOWER_DISTANCE) {
-            addFlower(e.clientX, e.clientY);
-            distanceSinceFlower = 0;
+    if (!drawing || e.pointerId !== activePointer || isTransitioning) return;
+
+    const dx = e.clientX - lastX;
+    const dy = e.clientY - lastY;
+    const dist = Math.hypot(dx, dy);
+
+    if (dist > 4) {
+        lastX = e.clientX;
+        lastY = e.clientY;
+        addFlower(lastX, lastY);
+
+        if (tutorialMode) {
+            drawnDistance += dist;
+            if (drawnDistance >= REQUIRED_DISTANCE) {
+                isTransitioning = true;
+                targetLetter.classList.remove("visible");
+                currentIndex++;
+                setTimeout(showCurrentLetter, 200);
+            }
         }
-    } else {
-        addFlower(e.clientX, e.clientY);
     }
 });
 
