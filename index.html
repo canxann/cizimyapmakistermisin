@@ -1,33 +1,43 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0,
-                   maximum-scale=1.0, user-scalable=no">
 
-    <title>Flowers For You 🌸</title>
+    <meta
+        name="viewport"
+        content="width=device-width,
+        initial-scale=1.0,
+        maximum-scale=1.0,
+        user-scalable=no"
+    >
+
+    <title>Çiçeklerle Çizim</title>
 
     <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
-    <main id="scene">
+    <main id="app">
 
-        <!-- Arka plan -->
-        <div class="background-glow"></div>
-
-        <!-- Dekoratif çiçek halkası -->
-        <div class="flower-ring" id="flowerRing"></div>
-
-        <!-- Yazı -->
-        <div class="title">
-            <span>Flowers For You</span>
+        <!-- Ortadaki mesaj -->
+        <div id="message">
+            Çiçeklerle çizim yapmak ister misin?
         </div>
 
-        <!-- Mouse / parmak çiçekleri -->
-        <div id="cursorFlowers"></div>
+        <!-- Çiçeklerin çizileceği alan -->
+        <div id="drawingLayer"></div>
+
+        <!-- Çizim sırasında kullanılan imleç çiçeği -->
+        <div id="brushFlower" class="flower brush-flower">
+            <span class="petal p1"></span>
+            <span class="petal p2"></span>
+            <span class="petal p3"></span>
+            <span class="petal p4"></span>
+            <span class="petal p5"></span>
+
+            <span class="center"></span>
+        </div>
 
     </main>
 
