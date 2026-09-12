@@ -23,7 +23,6 @@ body {
 
 #app {
     position: fixed;
-
     inset: 0;
 
     width: 100%;
@@ -33,59 +32,49 @@ body {
 
     background:
         radial-gradient(
-            circle at 50% 40%,
+            circle at 50% 42%,
             rgba(255,255,255,.20),
-            transparent 52%
+            transparent 58%
         ),
-        linear-gradient(
-            135deg,
-            #aec8f4,
-            #b8cdf1
-        );
+        #aec8f4;
 }
 
 
-/* =====================================================
-   CANVASLAR
-===================================================== */
+/* =========================================
+   CANVAS
+========================================= */
 
-#guideCanvas,
 #canvas {
     position: absolute;
-
     inset: 0;
 
     width: 100%;
     height: 100%;
 
     display: block;
-}
-
-#guideCanvas {
-    z-index: 2;
-
-    pointer-events: none;
-}
-
-#canvas {
-    z-index: 3;
 
     touch-action: none;
+
+    z-index: 1;
 
     cursor: crosshair;
 }
 
 
-/* =====================================================
+/* =========================================
    TUTORIAL UI
-===================================================== */
+========================================= */
 
 #tutorialUI {
     position: absolute;
 
-    inset: 0;
+    left: 50%;
+    top: 50%;
 
-    z-index: 10;
+    transform:
+        translate(-50%, -50%);
+
+    z-index: 5;
 
     display: flex;
 
@@ -93,37 +82,35 @@ body {
 
     align-items: center;
 
-    justify-content: center;
-
     pointer-events: none;
 
     transition:
-        opacity .55s ease,
-        transform .65s
-        cubic-bezier(.22,1,.36,1);
+        opacity .5s ease,
+        transform .6s cubic-bezier(.22,1,.36,1);
 }
 
-#tutorialUI.hidden {
+#tutorialUI.hide {
     opacity: 0;
 
     transform:
-        scale(1.05);
+        translate(-50%, -50%)
+        scale(1.08);
 }
 
 
-/* =====================================================
-   HİNT
-===================================================== */
+/* =========================================
+   BAŞLIK
+========================================= */
 
 #tutorialHint {
-    margin-bottom: 22px;
+    margin-bottom: 10px;
 
     color:
-        rgba(77,57,91,.58);
+        rgba(91, 67, 105, .58);
 
     font-family:
-        Inter,
-        "Segoe UI",
+        "Trebuchet MS",
+        "Arial Rounded MT Bold",
         Arial,
         sans-serif;
 
@@ -135,88 +122,75 @@ body {
 }
 
 
-/* =====================================================
-   HARF
-===================================================== */
+/* =========================================
+   HEDEF HARF
+========================================= */
 
-#letterText {
-    min-width: 180px;
+#letter {
+    min-width: 260px;
 
     text-align: center;
 
     color:
-        rgba(227,68,105,.18);
+        rgba(224, 66, 105, .27);
 
     font-family:
-        "Arial Rounded MT Bold",
         "Trebuchet MS",
-        "Segoe UI",
+        "Arial Rounded MT Bold",
         Arial,
         sans-serif;
 
     font-size:
         clamp(
-            190px,
-            31vw,
-            360px
+            180px,
+            32vw,
+            320px
         );
 
-    font-weight: 800;
+    font-weight: 700;
 
     line-height: .82;
 
-    letter-spacing: -8px;
-
     text-shadow:
-        0 8px 30px
-        rgba(160,70,110,.08);
+        0 10px 35px
+        rgba(130, 60, 100, .08);
 
+    transition:
+        opacity .25s ease,
+        transform .35s cubic-bezier(.22,1,.36,1);
+}
+
+#letter.change {
     opacity: 0;
 
     transform:
-        scale(.88);
-
-    transition:
-        opacity .3s ease,
-        transform .45s
-        cubic-bezier(.22,1,.36,1);
-}
-
-#letterText.show {
-    opacity: 1;
-
-    transform:
-        scale(1);
+        scale(.82);
 }
 
 
-/* =====================================================
-   PROGRESS
-===================================================== */
+/* =========================================
+   İLERLEME
+========================================= */
 
-#progressText {
+#progress {
     margin-top: 25px;
 
     color:
-        rgba(77,57,91,.48);
+        rgba(91, 67, 105, .48);
 
     font-family:
-        Inter,
-        "Segoe UI",
         Arial,
         sans-serif;
 
-    font-size: 13px;
+    font-size: 12px;
 
-    font-weight: 600;
-
-    letter-spacing: 1px;
+    letter-spacing: 2px;
 }
 
 
-/* =====================================================
+/* =========================================
    TAMAMLANDI
-===================================================== */
+========================================= */
 
 #completeMessage {
     position: absolute;
@@ -224,26 +198,25 @@ body {
     left: 50%;
     top: 50%;
 
-    z-index: 20;
+    z-index: 10;
 
     width: max-content;
 
     max-width: 90vw;
 
-    text-align: center;
-
-    pointer-events: none;
+    transform:
+        translate(-50%, -50%)
+        scale(.92);
 
     opacity: 0;
 
-    transform:
-        translate(-50%, -50%)
-        scale(.88);
+    pointer-events: none;
+
+    text-align: center;
 
     transition:
         opacity .7s ease,
-        transform .7s
-        cubic-bezier(.22,1,.36,1);
+        transform .7s cubic-bezier(.22,1,.36,1);
 }
 
 #completeMessage.show {
@@ -254,40 +227,36 @@ body {
         scale(1);
 }
 
-.completeTitle {
-    color: #e34469;
+#completeMessage strong {
+    display: block;
+
+    color: #df4268;
 
     font-family:
-        "Arial Rounded MT Bold",
         "Trebuchet MS",
-        "Segoe UI",
+        "Arial Rounded MT Bold",
         Arial,
         sans-serif;
 
     font-size:
         clamp(
-            30px,
+            28px,
             5vw,
-            60px
+            54px
         );
 
-    font-weight: 800;
-
-    line-height: 1.1;
-
-    text-shadow:
-        0 8px 25px
-        rgba(130,50,90,.12);
+    line-height: 1.2;
 }
 
-.completeSubtitle {
-    margin-top: 13px;
+#completeMessage span {
+    display: block;
+
+    margin-top: 12px;
 
     color:
-        rgba(77,57,91,.68);
+        rgba(82, 64, 91, .72);
 
     font-family:
-        "Segoe UI",
         Arial,
         sans-serif;
 
@@ -297,14 +266,12 @@ body {
             2vw,
             18px
         );
-
-    font-weight: 500;
 }
 
 
-/* =====================================================
+/* =========================================
    TEMİZLE
-===================================================== */
+========================================= */
 
 #clearButton {
     position: absolute;
@@ -312,27 +279,31 @@ body {
     right: 22px;
     bottom: 22px;
 
-    z-index: 30;
+    z-index: 20;
 
-    border: 0;
+    padding: 11px 18px;
 
-    padding: 11px 19px;
+    border: none;
 
     border-radius: 999px;
 
     background:
-        rgba(255,255,255,.75);
+        rgba(255,255,255,.72);
 
     color: #b83d66;
 
     font-family:
-        "Segoe UI",
         Arial,
         sans-serif;
 
     font-size: 14px;
 
-    font-weight: 600;
+    box-shadow:
+        0 5px 18px
+        rgba(80,40,90,.12);
+
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
 
     cursor: pointer;
 
@@ -340,16 +311,12 @@ body {
 
     pointer-events: none;
 
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-
-    box-shadow:
-        0 6px 22px
-        rgba(70,45,90,.13);
+    transform:
+        translateY(8px);
 
     transition:
         opacity .5s ease,
-        transform .2s ease,
+        transform .3s ease,
         background .2s ease;
 }
 
@@ -357,6 +324,9 @@ body {
     opacity: 1;
 
     pointer-events: auto;
+
+    transform:
+        translateY(0);
 }
 
 #clearButton:hover {
@@ -368,57 +338,53 @@ body {
 
 #clearButton:active {
     transform:
-        scale(.95);
+        scale(.94);
 }
 
 
-/* =====================================================
-   MOBİL
-===================================================== */
+/* =========================================
+   TELEFON
+========================================= */
 
 @media (max-width: 600px) {
 
     #tutorialHint {
-        margin-bottom: 16px;
+        font-size: 11px;
 
-        font-size: 10px;
-
-        letter-spacing: 2.3px;
+        letter-spacing: 2px;
     }
 
-    #letterText {
+    #letter {
+        min-width: 220px;
+
         font-size:
             clamp(
-                155px,
-                50vw,
-                280px
+                160px,
+                52vw,
+                270px
             );
-
-        letter-spacing: -5px;
     }
 
-    #progressText {
-        margin-top: 18px;
-
-        font-size: 11px;
+    #progress {
+        margin-top: 20px;
     }
 
     #clearButton {
         right: 15px;
         bottom: 15px;
 
-        padding: 10px 16px;
+        padding: 10px 15px;
     }
 }
 
 
-/* =====================================================
-   ÇOK KÜÇÜK TELEFON
-===================================================== */
+/* =========================================
+   KÜÇÜK TELEFON
+========================================= */
 
 @media (max-width: 380px) {
 
-    #letterText {
+    #letter {
         font-size: 145px;
     }
 }
