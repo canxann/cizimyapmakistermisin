@@ -1,0 +1,332 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html,
+body {
+    width: 100%;
+    height: 100%;
+}
+
+body {
+    overflow: hidden;
+    background: #aec8f5;
+    font-family: Georgia, "Times New Roman", serif;
+
+    /* Telefonda kaydırma / zoom olmasın */
+    touch-action: none;
+
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+
+/* =========================
+   SAHNE
+========================= */
+
+#scene {
+    position: relative;
+
+    width: 100vw;
+    height: 100vh;
+
+    overflow: hidden;
+
+    background:
+        radial-gradient(
+            circle at 50% 48%,
+            rgba(255,255,255,.16),
+            transparent 42%
+        ),
+        #aec8f5;
+}
+
+
+/* Hafif ışık */
+
+.background-glow {
+    position: absolute;
+
+    width: 70vw;
+    height: 70vw;
+
+    max-width: 900px;
+    max-height: 900px;
+
+    left: 50%;
+    top: 50%;
+
+    transform: translate(-50%, -50%);
+
+    border-radius: 50%;
+
+    background: rgba(255,255,255,.08);
+
+    filter: blur(50px);
+
+    pointer-events: none;
+}
+
+
+/* =========================
+   BAŞLIK
+========================= */
+
+.title {
+    position: absolute;
+
+    left: 50%;
+    top: 50%;
+
+    transform: translate(-50%, -50%);
+
+    z-index: 20;
+
+    pointer-events: none;
+
+    white-space: nowrap;
+
+    text-align: center;
+}
+
+.title span {
+    color: #e84267;
+
+    font-size: clamp(
+        30px,
+        5vw,
+        70px
+    );
+
+    font-weight: 500;
+
+    letter-spacing: -1px;
+
+    text-shadow:
+        0 2px 3px rgba(255,255,255,.25),
+        0 4px 12px rgba(150,50,90,.10);
+}
+
+
+/* =========================
+   ÇİÇEK HALKASI
+========================= */
+
+.flower-ring {
+    position: absolute;
+
+    left: 50%;
+    top: 50%;
+
+    width: min(78vw, 850px);
+    height: min(78vw, 650px);
+
+    transform: translate(-50%, -50%);
+
+    border-radius: 50%;
+
+    pointer-events: none;
+}
+
+
+/* =========================
+   ÇİÇEK
+========================= */
+
+.ring-flower {
+    position: absolute;
+
+    width: var(--size);
+    height: var(--size);
+
+    left: var(--x);
+    top: var(--y);
+
+    transform:
+        translate(-50%, -50%)
+        rotate(var(--rotation));
+
+    opacity: var(--opacity);
+
+    filter:
+        drop-shadow(
+            0 7px 7px rgba(100,40,90,.25)
+        );
+
+    animation:
+        floating
+        var(--duration)
+        ease-in-out
+        infinite
+        alternate;
+}
+
+
+/* Taç yaprak */
+
+.petal {
+    position: absolute;
+
+    left: 50%;
+    top: 50%;
+
+    width: 42%;
+    height: 70%;
+
+    transform-origin: 50% 100%;
+
+    border-radius:
+        50%
+        50%
+        45%
+        45%;
+
+    background:
+        linear-gradient(
+            135deg,
+            #f8d8ec,
+            #dc78a8
+        );
+
+    transform:
+        translate(-50%, -100%)
+        rotate(var(--angle));
+
+    box-shadow:
+        inset
+        -3px -5px 8px
+        rgba(130,50,100,.12);
+}
+
+
+/* Çiçek merkezi */
+
+.flower-center {
+    position: absolute;
+
+    left: 50%;
+    top: 50%;
+
+    width: 25%;
+    height: 25%;
+
+    transform: translate(-50%, -50%);
+
+    border-radius: 50%;
+
+    background:
+        radial-gradient(
+            circle,
+            #ffe1a8 0%,
+            #e9789b 48%,
+            #b83869 100%
+        );
+
+    box-shadow:
+        0 2px 5px rgba(90,30,70,.25);
+}
+
+
+/* =========================
+   PARMAK / MOUSE ÇİÇEKLERİ
+========================= */
+
+#cursorFlowers {
+    position: absolute;
+
+    inset: 0;
+
+    pointer-events: none;
+
+    z-index: 30;
+}
+
+
+.cursor-flower {
+    position: absolute;
+
+    width: var(--size);
+    height: var(--size);
+
+    left: 0;
+    top: 0;
+
+    opacity: 0;
+
+    transform:
+        translate(-50%, -50%)
+        rotate(var(--rotation));
+
+    filter:
+        drop-shadow(
+            0 6px 8px rgba(90,30,80,.30)
+        );
+
+    will-change:
+        left,
+        top,
+        transform,
+        opacity;
+}
+
+
+.cursor-flower .petal {
+    background:
+        linear-gradient(
+            135deg,
+            #fff0fa,
+            #e55c92
+        );
+}
+
+
+/* Hareket ederken çiçek hafif dönsün */
+
+@keyframes floating {
+
+    from {
+        margin-top: -3px;
+    }
+
+    to {
+        margin-top: 4px;
+    }
+}
+
+
+/* =========================
+   MOBİL
+========================= */
+
+@media (max-width: 600px) {
+
+    .flower-ring {
+        width: 100vw;
+        height: 85vw;
+    }
+
+    .title span {
+        font-size: 34px;
+    }
+
+    .cursor-flower {
+        filter:
+            drop-shadow(
+                0 4px 6px rgba(90,30,80,.25)
+            );
+    }
+}
+
+
+/* Çok küçük ekran */
+
+@media (max-width: 380px) {
+
+    .title span {
+        font-size: 29px;
+    }
+
+}
