@@ -31,16 +31,14 @@ let tutorialMode = true;
 let currentIndex = 0;
 let currentLetter = "";
 let targetSegments = [];
-let targetPoints = [];
-let userPoints = [];
+let targetCheckpoints = [];
 let currentStroke = [];
 let drawing = false;
 let activePointer = null;
 let distanceSinceFlower = 0;
 
-const FLOWER_DISTANCE = 8; // Çiçekler çok daha sık ve gür açacak
-const HIT_RADIUS = 35; // Hitbox daraltıldı, harfi düzgün takip etmek zorundasın
-const REQUIRED_COVERAGE = 0.75; // Harfin en az %75'i çizilmeden geçilmez
+const FLOWER_DISTANCE = 8;
+const HIT_RADIUS = 28; // Hassas hitbox
 
 function resizeCanvas() {
     canvas.width = window.innerWidth;
@@ -90,30 +88,30 @@ function showCurrentLetter() {
     if (currentLetter === " ") {
         targetLetter.textContent = "";
         currentIndex++;
-        setTimeout(showCurrentLetter, 250);
+        setTimeout(showCurrentLetter, 200);
         return;
     }
 
     const def = LETTERS[currentLetter] || [];
     targetSegments = def.map(seg => seg.map(toScreenPoint));
     
-    // Hitbox için hedef noktaları yoğunlaştırıyoruz
-    targetPoints = [];
+    // Harfi oluşturan her bir çizginin (segmentin) üzerini detaylı kontrol noktalarıyla dolduruyoruz
+    targetCheckpoints = [];
     targetSegments.forEach(seg => {
         for (let i = 0; i < seg.length - 1; i++) {
             const a = seg[i], b = seg[i+1];
             const dist = Math.hypot(b.x - a.x, b.y - a.y);
-            const steps = Math.max(5, Math.floor(dist / 10));
+            const steps = Math.max(6, Math.floor(dist / 8));
             for(let s = 0; s <= steps; s++) {
-                targetPoints.push({
+                targetCheckpoints.push({
                     x: a.x + (b.x - a.x) * (s/steps),
-                    y: a.y + (b.y - a.y) * (s/steps)
+                    y: a.y + (b.y - a.y) * (s/steps),
+                    hit: false
                 });
             }
         }
     });
 
-    userPoints = [];
     currentStroke = [];
 
     targetLetter.textContent = currentLetter;
@@ -123,7 +121,7 @@ function showCurrentLetter() {
 }
 
 function addFlower(x, y) {
-    if (flowers.length > 1500) flowers.shift();
+    if (flowers.length > 2500) flowers.shift();
     flowers.push({
         x: x + (Math.random() - 0.5) * 8,
         y: y + (Math.random() - 0.5) * 8,
@@ -131,7 +129,7 @@ function addFlower(x, y) {
         rotation: Math.random() * Math.PI * 2,
         hue: -12 + Math.random() * 24,
         born: performance.now(),
-        life: 8000
+        life: 12000
     });
 }
 
@@ -139,7 +137,7 @@ function drawFlower(flower, now) {
     const age = now - flower.born;
     if (age >= flower.life) return false;
 
-    let alpha = 0.92;
+    let alpha = 0.95;
     if (age > flower.life - 1200) {
         alpha *= (flower.life - age) / 1200;
     }
@@ -166,31 +164,34 @@ function drawFlower(flower, now) {
     return true;
 }
 
-function checkLetterCompletion() {
-    if (!tutorialMode || targetPoints.length === 0) return;
+function checkLetterCompletion(x, y) {
+    if (!tutorialMode || targetCheckpoints.length === 0) return;
 
-    let covered = 0;
-    for (const target of targetPoints) {
-        let found = false;
-        for (const user of userPoints) {
-            if (Math.hypot(target.x - user.x, target.y - user.y) <= HIT_RADIUS) {
-                found = true;
-                break;
-            }
+    let hitCount = 0;
+    targetCheckpoints.forEach(cp => {
+        if (!cp.hit && Math.hypot(cp.x - x, cp.y - y) <= HIT_RADIUS) {
+            cp.hit = true;
         }
-        if (found) covered++;
-    }
+        if (cp.hit) hitCount++;
+    });
 
-    // Harfin yeterli oranını çizdiyse sonraki harfe geç
-    if (covered / targetPoints.length >= REQUIRED_COVERAGE) {
+    // Harfin en az %90'ı eksiksiz çizilmeden geçilmeyecek
+    if (hitCount / targetCheckpoints.length >= 0.90) {
         targetLetter.classList.remove("visible");
         currentIndex++;
-        setTimeout(showCurrentLetter, 400);
+        currentStroke = [];
+        setTimeout(showCurrentLetter, 350);
     }
 }
 
 function render(time) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Çiçekler arkada kalıcı olarak durur
+    for (let i = flowers.length - 1; i >= 0; i--) {
+        const alive = drawFlower(flowers[i], time);
+        if (!alive) flowers.splice(i, 1);
+    }
 
     // Rehber Çizgi
     if (tutorialMode && targetSegments.length > 0) {
@@ -220,12 +221,6 @@ function render(time) {
         ctx.restore();
     }
 
-    // Çiçekler
-    for (let i = flowers.length - 1; i >= 0; i--) {
-        const alive = drawFlower(flowers[i], time);
-        if (!alive) flowers.splice(i, 1);
-    }
-
     requestAnimationFrame(render);
 }
 requestAnimationFrame(render);
@@ -235,9 +230,9 @@ canvas.addEventListener("pointerdown", (e) => {
     activePointer = e.pointerId;
     drawing = true;
     currentStroke = [{ x: e.clientX, y: e.clientY }];
-    userPoints.push({ x: e.clientX, y: e.clientY });
     distanceSinceFlower = 0;
     addFlower(e.clientX, e.clientY);
+    if (tutorialMode) checkLetterCompletion(e.clientX, e.clientY);
 });
 
 canvas.addEventListener("pointermove", (e) => {
@@ -246,7 +241,6 @@ canvas.addEventListener("pointermove", (e) => {
     const pt = { x: e.clientX, y: e.clientY };
     
     currentStroke.push(pt);
-    userPoints.push(pt);
 
     distanceSinceFlower += Math.hypot(pt.x - last.x, pt.y - last.y);
     if (distanceSinceFlower >= FLOWER_DISTANCE) {
@@ -255,7 +249,7 @@ canvas.addEventListener("pointermove", (e) => {
     }
 
     if (tutorialMode) {
-        checkLetterCompletion();
+        checkLetterCompletion(pt.x, pt.y);
     }
 });
 
@@ -264,15 +258,11 @@ canvas.addEventListener("pointerup", (e) => {
         drawing = false;
         activePointer = null;
         currentStroke = [];
-        if (tutorialMode) {
-            checkLetterCompletion();
-        }
     }
 });
 
 clearButton.addEventListener("click", () => {
     flowers = [];
-    userPoints = [];
     currentStroke = [];
 });
 
